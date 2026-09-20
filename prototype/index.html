@@ -606,11 +606,15 @@
   .note-entry:hover .note-entry-arrow{color:var(--clay);transform:translateX(3px)}
 
   /* ===== 读书笔记本：卡片网格 ===== */
-  .notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
-  .note-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);min-height:150px;display:flex;flex-direction:column}
+  /* 卡片是「索引」不是「正文」：只给 2 行摘要 + 字数，长度信息交给数字表达。
+     全文留给书写页。这样卡片高度统一、可一眼扫过，也不会出现截断在半句的尴尬。 */
+  .notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .note-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:18px 20px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);min-height:164px;display:flex;flex-direction:column}
   .note-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
-  .note-card .nc-date{font-size:11px;color:var(--ink-3);margin-bottom:8px}
-  .note-card .nc-text{font-size:13.5px;color:var(--ink);line-height:1.85;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+  .note-card .nc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .note-card .nc-date{font-size:11px;color:var(--ink-3)}
+  .note-card .nc-len{font-size:10.5px;color:var(--ink-3);background:var(--sunken);padding:1px 7px;border-radius:20px;white-space:nowrap}
+  .note-card .nc-text{font-size:14px;color:var(--ink);line-height:1.95;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
   .note-card .nc-book{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);margin-top:12px;align-self:flex-start}
   .note-card.new{align-items:center;justify-content:center;border-style:dashed;border-color:var(--line-2);background:transparent;color:var(--ink-2);gap:8px;text-align:center}
   .note-card.new:hover{border-color:var(--clay);background:var(--clay-bg);color:var(--clay-2)}
@@ -619,14 +623,15 @@
   .notes-empty{grid-column:1/-1;font-size:13px;color:var(--ink-3);line-height:1.9;padding:8px 0 4px}
 
   /* ===== 笔记书写区：独立整页 ===== */
+  /* 这里才是「正文」：给足高度与行距，像一页稿纸，鼓励写长、写完整。 */
   .editor{max-width:760px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:34px 38px 26px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative}
   .editor::before{content:'';position:absolute;top:0;left:38px;right:38px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
   .editor-head{margin-bottom:20px}
   .editor-kicker{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--clay-2);text-transform:uppercase;margin-bottom:8px}
   .editor-head h2{font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:Georgia,'Songti SC','STSong',serif}
-  .editor-area{width:100%;min-height:340px;border:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0;font-family:Georgia,'Songti SC','STSong',serif;font-size:15.5px;line-height:2;color:var(--ink);resize:vertical;background:transparent;display:block}
+  .editor-area{width:100%;min-height:460px;border:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:24px 0;font-family:Georgia,'Songti SC','STSong',serif;font-size:16px;line-height:2.05;color:var(--ink);resize:vertical;background:transparent;display:block}
   .editor-area:focus{outline:none}
-  .editor-area::placeholder{color:var(--ink-3);font-family:-apple-system,'PingFang SC',sans-serif;font-size:14px;line-height:2}
+  .editor-area::placeholder{color:var(--ink-3);font-family:-apple-system,'PingFang SC',sans-serif;font-size:14px;line-height:2.05}
   .editor-foot{display:flex;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
   .editor-meta{font-size:12px;color:var(--ink-3);margin-right:auto}
   .editor-actions{display:flex;gap:10px;flex-wrap:wrap}
@@ -820,7 +825,7 @@
           <div class="editor-kicker" id="editorKicker">写读书笔记</div>
           <h2 id="editorBook">《思考，快与慢》</h2>
         </div>
-        <textarea class="editor-area" id="editorArea" placeholder="在这里写下你的思考…&#10;&#10;可以是一句话，也可以是一整段推理。"></textarea>
+        <textarea class="editor-area" id="editorArea" placeholder="在这里写下你的思考。&#10;&#10;比如：这一章让我改变了什么看法？我原来的判断哪里出了问题？&#10;可以只写一句话，也可以写一整段推理 —— 写长写短都不必勉强。" oninput="updateEditorMeta()"></textarea>
         <div class="editor-foot">
           <span class="editor-meta" id="editorMeta"></span>
           <div class="editor-actions">
@@ -2680,7 +2685,18 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* 书屋页：刷新入口模块（数量 + 最近一条预览） */
+/* 摘要：折叠空白 → 取前 N 字 → 超长补省略号。
+   目的是让短摘要「看起来就是摘要」而不是被截断的段落。 */
+function excerpt(text, n){
+  const flat = String(text).replace(/\s+/g, ' ').trim();
+  return flat.length > n ? flat.slice(0, n) + '…' : flat;
+}
+function noteLength(text){
+  const t = String(text).replace(/\s+/g, '');
+  return t.length + ' 字';
+}
+
+/* 书屋页：刷新入口模块（数量 + 最近一条摘要） */
 function renderNoteEntry(){
   const cnt = document.getElementById('noteCount');
   const pv = document.getElementById('notePreview');
@@ -2691,7 +2707,7 @@ function renderNoteEntry(){
     pv.textContent = '还没有笔记 · 点进来写下你的第一段思考';
   }else{
     const latest = list[list.length - 1];
-    pv.textContent = latest.date + ' · ' + latest.text.replace(/\s+/g, ' ').slice(0, 60);
+    pv.textContent = latest.date + ' · ' + excerpt(latest.text, 56);
   }
 }
 
@@ -2721,8 +2737,9 @@ function renderNotesGrid(){
     const card = document.createElement('div');
     card.className = 'note-card';
     card.dataset.noteId = n.id;
-    card.innerHTML = `<div class="nc-date">${escapeHtml(n.date)}</div>`
-      + `<div class="nc-text">${escapeHtml(n.text)}</div>`
+    card.innerHTML = `<div class="nc-top"><span class="nc-date">${escapeHtml(n.date)}</span>`
+      + `<span class="nc-len">${noteLength(n.text)}</span></div>`
+      + `<div class="nc-text">${escapeHtml(excerpt(n.text, 68))}</div>`
       + (n.book ? `<span class="nc-book">${escapeHtml(n.book)}</span>` : '');
     card.addEventListener('click', ()=> openNoteEditor(n.id));
     grid.appendChild(card);
@@ -2751,18 +2768,28 @@ function openNoteEditor(id){
   if(id === null){
     kicker.textContent = '写读书笔记';
     area.value = '';
-    meta.textContent = '写下此刻的想法，保存后会出现在笔记列表里';
+    meta.dataset.prefix = '新笔记';
     del.classList.add('hidden');
   }else{
     const n = notes.find(x => x.id === id);
     if(!n){ showNotes(); return; }
     kicker.textContent = '编辑读书笔记';
     area.value = n.text;
-    meta.textContent = '创建于 ' + n.date;
+    meta.dataset.prefix = '创建于 ' + n.date;
     del.classList.remove('hidden');
   }
+  updateEditorMeta();
   window.scrollTo(0,0);
   setTimeout(()=>area.focus(), 100);
+}
+/* 底部实时显示字数：写多长心里有数，也让「长度」这件事有明确反馈 */
+function updateEditorMeta(){
+  const area = document.getElementById('editorArea');
+  const meta = document.getElementById('editorMeta');
+  if(!area || !meta) return;
+  const prefix = meta.dataset.prefix || '';
+  const n = String(area.value || '').replace(/\s+/g, '').length;
+  meta.textContent = n > 0 ? (prefix + ' · 共 ' + n + ' 字') : prefix;
 }
 function saveCurrentNote(){
   const area = document.getElementById('editorArea');
