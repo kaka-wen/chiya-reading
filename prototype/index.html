@@ -637,8 +637,8 @@
   <div class="main-area">
     <!-- 首页：仪表盘 -->
     <main id="view-welcome" class="container">
-      <!-- 当前正在精读 -->
-      <div id="welcomeReading" class="wl-reading-card">
+      <!-- 当前正在精读（有书时显示） -->
+      <div id="welcomeReading" class="wl-reading-card hidden">
         <div class="wl-reading-cover" id="wlReadingCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">
           <span id="wlReadingInitial">思</span>
         </div>
@@ -653,9 +653,8 @@
           <button class="wl-btn" onclick="openBook()" style="margin-top:12px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>继续精读</button>
         </div>
       </div>
-      <!-- 没有正在精读的书时显示 -->
-      <div id="welcomeEmpty" class="hidden">
-        <div class="wl-hero">
+      <!-- 欢迎页（始终显示） -->
+      <div class="wl-hero">
           <div class="wl-illustration">
             <svg class="ill-book" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M4 8C4 5.79086 5.79086 4 8 4H40V64H8C5.79086 64 4 62.2091 4 60V8Z" stroke="var(--clay)" stroke-width="1.5" stroke-linejoin="round"/>
@@ -716,7 +715,6 @@
             <button class="wl-btn ghost" onclick="openUpload()"><span class="plus" style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 上传自己的书</button>
           </div>
         </div>
-      </div>
 
       <div class="wl-feat">
         <div class="wl-feat-item">
@@ -2519,10 +2517,9 @@ function showWelcome(){
   document.getElementById('view-welcome').classList.remove('hidden');
   setActiveBookEl(null);
   setActiveNav(null);
-  // 有正在精读的书 → 显示卡片；没有 → 显示空态欢迎页
+  // 有正在精读的书 → 显示进度卡片；没有 → 隐藏
   const hasReading = !shelved && currentReadingBook !== null;
   document.getElementById('welcomeReading').classList.toggle('hidden', !hasReading);
-  document.getElementById('welcomeEmpty').classList.toggle('hidden', hasReading);
   window.scrollTo(0,0);
 }
 function showShelf(){
