@@ -1,0 +1,2950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赤牙 · AI阅读</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    /* 中性 · 三档：页面底 / 卡片 / 内嵌 */
+    --bg:#F5EFE6;
+    --card:#FFFDF9;
+    --sunken:#EFE7D8;
+    --line:#E4DAC6;
+    --line-2:#CFC2A8;
+
+    /* 文字 */
+    --ink:#2A2622;
+    --ink-2:#5F5951;
+    --ink-3:#8E867A;
+
+    /* 主色 · 赤陶（行动与重点，约 10% 面积）*/
+    --clay:#C0603C;
+    --clay-2:#8F3F26;
+    --clay-bg:#F8EAE2;
+
+    /* 辅色 · 墨绿（结构与导航，约 25% 面积）*/
+    --pine:#2F5D50;
+    --pine-2:#1C3B33;
+    --pine-bg:#E4EDE9;
+
+    /* 强调 · 暗金（点缀）*/
+    --gold:#B8931F;
+    --gold-2:#8A6A12;
+    --gold-bg:#FAF1D8;
+    --gold-line:#E5D3A0;
+
+    /* 语义色 · 评测判分（独立于主题色）*/
+    --green:#2F9E44;   --green-bg:#EAF5EC;
+    --yellow:#E8590C;  --yellow-bg:#FDF0E4;
+    --red:#C92A2A;     --red-bg:#FBEDEC;
+
+    /* 形状与层次 */
+    --radius:4px;
+    --shadow:0 1px 4px rgba(42,38,34,.04);
+    --shadow-lg:0 4px 16px rgba(42,38,34,.08);
+  }
+  h1,h2,h3,h4{line-height:1.3}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+  }
+  /* 衬线体用于标题与装饰性文字，营造印刷书感 */
+  .serif{font-family:Georgia,'Songti SC','STSong','Noto Serif SC',serif}
+  .ico{display:inline-flex;align-items:center;vertical-align:middle;margin-right:4px}
+  .ico svg{display:block}
+  .hidden{display:none !important}
+  a{color:inherit;text-decoration:none}
+
+  /* ===== 顶部导航 ===== */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,253,249,.88);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{max-width:1120px;margin:0 auto;padding:0 40px;height:60px;display:flex;align-items:center;gap:28px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;color:var(--clay);cursor:pointer;font-family:Georgia,'Songti SC',serif}
+  .logo-mark{width:32px;height:32px;border-radius:4px;background:linear-gradient(135deg,var(--clay),var(--clay-2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+  .nav-links{display:flex;gap:6px;margin-left:auto}
+  .nav-link{padding:7px 14px;border-radius:4px;color:var(--ink-2);font-size:14px;cursor:pointer;transition:.15s}
+  .nav-link:hover{background:var(--sunken);color:var(--ink)}
+  .nav-link.active{background:var(--clay);color:#fff}
+
+  .container{max-width:1120px;margin:0 auto;padding:28px 40px 80px}
+
+  /* ===== 书库页 ===== */
+  .hero{margin:12px 0 28px}
+  .hero h1{font-size:34px;font-weight:700;letter-spacing:-.8px;line-height:1.25;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif}
+  .hero p{color:var(--ink-2);margin-top:10px;font-size:16px;line-height:1.7}
+  .hero p .quote-src{font-size:13px;color:var(--ink-3);margin-left:4px}
+  .hero .accent{color:var(--gold-2);font-weight:700}
+
+  /* ===== 欢迎页（图书馆入口） ===== */
+  .wl-hero{text-align:center;padding:60px 20px 48px;position:relative}
+  .wl-hero::after{content:'';display:block;width:60px;height:1px;background:var(--gold);margin:0 auto;margin-top:40px}
+  .wl-kicker{font-size:11px;font-weight:700;letter-spacing:4px;color:var(--clay-2);margin-bottom:18px;text-transform:uppercase;font-family:Georgia,serif}
+  .wl-title{font-size:36px;font-weight:800;letter-spacing:-.5px;line-height:1.25;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif;margin-bottom:16px}
+  .wl-lead{font-size:16px;line-height:1.9;color:var(--ink-2);max-width:560px;margin:0 auto}
+  .wl-cta{display:flex;gap:14px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+  .wl-btn{background:var(--pine);color:#fff;border:none;font-family:inherit;font-size:14px;font-weight:600;padding:11px 24px;border-radius:4px;cursor:pointer;transition:.15s;letter-spacing:.5px}
+  .wl-btn:hover{background:var(--pine-2);transform:translateY(-1px)}
+  .wl-btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
+  .wl-btn.ghost:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg);transform:none}
+  .wl-feat{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:8px}
+  .wl-feat-item{text-align:center;padding:0 8px}
+  .wl-feat-num{font-size:28px;font-weight:700;color:var(--line-2);font-family:Georgia,'Songti SC',serif;margin-bottom:10px}
+  .wl-feat-item h4{font-size:16px;font-weight:700;margin-bottom:8px;font-family:Georgia,'Songti SC','STSong',serif}
+  .wl-feat-item p{font-size:13.5px;color:var(--ink-2);line-height:1.85}
+  @media (max-width:760px){ .wl-hero{padding:40px 12px 32px} .wl-title{font-size:28px} .wl-feat{grid-template-columns:1fr;gap:20px} }
+
+  .section-title{font-size:18px;font-weight:700;letter-spacing:-.2px;margin:34px 0 16px;display:flex;align-items:center;gap:9px}
+  .section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+
+  .book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+  .book-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:22px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .book-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
+  .book-card.just-added{animation:shelfIn .5s cubic-bezier(.2,.8,.3,1);border-color:var(--pine);box-shadow:0 0 0 2px var(--pine),0 4px 16px rgba(42,38,34,.08)}
+  .book-card.just-added:hover{transform:none}
+  @keyframes shelfIn{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:none}}
+  .shelf-new-tag{position:absolute;top:10px;right:10px;z-index:2;background:var(--pine);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;opacity:0;transition:.3s}
+  .book-card.just-added .shelf-new-tag{opacity:1}
+  .toast{position:fixed;left:50%;bottom:38px;transform:translateX(-50%) translateY(18px);background:var(--pine-2);color:#fff;padding:12px 22px;border-radius:4px;font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(28,59,51,.3);opacity:0;pointer-events:none;transition:.28s;z-index:9999}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .cover{height:150px;border-radius:4px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:#fff;position:relative;overflow:hidden}
+  .cover .cover-title{font-size:20px;font-weight:700;text-align:center;line-height:1.35;padding:0 20px}
+  .cover .cover-author{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;opacity:.85}
+  .cover .cover-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
+  .book-card h3{font-size:17px;font-weight:600;letter-spacing:-.2px;margin-bottom:4px}
+  .book-card .meta{font-size:13px;color:var(--ink-2)}
+  .book-card .status{margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:20px}
+  .status.done{background:var(--green-bg);color:var(--green)}
+  .status.ing{background:var(--yellow-bg);color:var(--yellow)}
+  .status.wait{background:var(--sunken);color:var(--ink-3)}
+  .progress-track{height:6px;background:var(--sunken);border-radius:4px;margin-top:10px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--clay),var(--clay-2))}
+
+  /* ===== 书籍详情 ===== */
+  .book-head{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:28px;display:flex;gap:26px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .book-head .cover-lg{width:130px;height:180px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;position:relative;overflow:hidden}
+  .book-head .cover-lg .cover-title{font-size:17px;font-weight:800;text-align:center;padding:0 14px;line-height:1.4}
+  .book-head .cover-lg .cover-author{position:absolute;bottom:12px;font-size:11px;opacity:.85}
+  .book-head-info{flex:1}
+  .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .tag{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);font-weight:600}
+  .tag.blue{background:var(--pine-bg);color:var(--pine)}
+  .book-head-info h2{font-size:29px;font-weight:700;letter-spacing:-.6px;font-family:Georgia,'Songti SC','STSong',serif}
+  .book-head-info .author{color:var(--ink-2);font-size:14px;margin-top:4px}
+  .book-head-info .desc{color:var(--ink-2);font-size:14px;margin-top:14px;max-width:640px}
+  .book-head-actions{margin-top:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .book-head-actions .hint{font-size:12px;color:var(--ink-3)}
+  .btn-shelve{background:var(--pine);color:#fff;border:none;font-weight:600;font-size:14px;padding:9px 18px;border-radius:4px;cursor:pointer;transition:.15s}
+  .btn-shelve:hover{background:var(--pine-2);transform:translateY(-1px)}
+  .btn-shelve.done{background:var(--sunken);color:var(--ink-3);cursor:default;transform:none}
+  .mastery-overview{margin-top:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .mastery-overview .label{font-size:13px;color:var(--ink-2)}
+  .mastery-ring{display:flex;align-items:center;gap:10px}
+  .ring{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--clay) 0 62%,var(--line) 62% 100%);display:flex;align-items:center;justify-content:center}
+  .ring .inner{width:40px;height:40px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--clay)}
+
+  /* ===== Tab ===== */
+  .tab-bar{display:flex;gap:4px;margin:22px 0 0;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:5px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .tab{padding:10px 18px;border-radius:4px;font-size:15px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:.15s}
+  .tab:hover{background:var(--sunken)}
+  .tab.active{background:var(--pine);color:#fff}
+  .subtab-bar{display:flex;gap:8px;margin:20px 0 0}
+  .subtab{padding:8px 16px;border-radius:4px;font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;border:1px solid var(--line);background:var(--card);transition:.15s}
+  .subtab.active{background:var(--pine-bg);border-color:#A9C4BA;color:var(--pine)}
+
+  .panel{margin-top:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:22px;box-shadow:0 1px 4px rgba(42,38,34,.04);transition:.18s}
+  .card:hover{border-color:var(--line-2);box-shadow:0 4px 16px rgba(42,38,34,.08)}
+
+  /* ===== 核心理论卡片 ===== */
+  .theory-list{display:flex;flex-direction:column;gap:14px}
+  .theory-card{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .theory-head{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+  .theory-idx{width:34px;height:34px;border-radius:4px;background:var(--pine);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .theory-head .t-name{font-size:16px;font-weight:700;font-family:Georgia,'Songti SC','STSong',serif}
+  .theory-head .t-sub{font-size:13px;color:var(--ink-3);margin-top:1px}
+  .theory-head .arrow{margin-left:auto;color:var(--ink-3);transition:.2s}
+  .theory-card.open .arrow{transform:rotate(180deg)}
+  .theory-body{display:none;padding:0 22px 20px;border-top:1px solid var(--line);padding-top:16px}
+  .theory-card.open .theory-body{display:block}
+  .t-def{background:var(--sunken);border-left:3px solid var(--gold);padding:12px 16px;border-radius:0 8px 8px 0;font-size:14px;color:var(--ink);margin-bottom:16px;font-family:Georgia,'Songti SC','STSong',serif}
+  .eval-box{background:var(--sunken);border-radius:4px;padding:12px 14px}
+  .eval-item{font-size:13px;color:var(--ink-2);line-height:1.7;margin-bottom:6px}
+  .eval-item:last-child{margin-bottom:0}
+  .eval-item b{color:var(--ink);font-weight:600}
+  .sub-block{margin-top:16px}
+  .sub-block h4{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:8px;display:flex;align-items:center;gap:6px;font-family:Georgia,'Songti SC','STSong',serif}
+  .related-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--sunken);border-radius:4px;margin-bottom:8px}
+  .related-item .rel-name{font-weight:600;font-size:14px;font-family:Georgia,'Songti SC','STSong',serif}
+  .related-item .rel-meta{font-size:12px;color:var(--ink-2);margin-top:1px}
+  .related-item .rel-link{font-size:12px;color:var(--clay-2);margin-top:3px;font-weight:600}
+  .related-item .rel-def{font-size:12px;color:var(--ink-2);margin-top:5px;line-height:1.6}
+  .related-item.is-ai{background:var(--gold-bg);border:0.5px dashed var(--gold)}
+  .src-tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;margin-top:7px;line-height:1.5}
+  .src-tag.book{background:var(--clay-bg);color:var(--clay);cursor:pointer;transition:.15s}
+  .src-tag.book:hover{background:var(--clay);color:#fff}
+  .src-tag.ai{background:var(--gold-bg);color:var(--gold-2)}
+  .chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;background:var(--clay-bg);color:var(--clay);margin-right:6px;margin-bottom:4px;font-weight:600}
+
+  /* ===== 逻辑链 ===== */
+  .logic-chain{display:flex;flex-direction:column;gap:0}
+  .logic-step{display:flex;gap:16px;position:relative;padding-bottom:20px}
+  .logic-step:last-child{padding-bottom:0}
+  .logic-step::before{content:"";position:absolute;left:15px;top:34px;bottom:0;width:2px;background:var(--line)}
+  .logic-step:last-child::before{display:none}
+  .logic-node{width:32px;height:32px;border-radius:50%;background:var(--pine-bg);color:var(--pine);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;z-index:1;box-shadow:inset 0 0 0 2px #FFFDF9}
+  .logic-step .content{flex:1}
+  .logic-step .content h4{font-size:14px;font-weight:700;margin-bottom:3px;font-family:Georgia,'Songti SC','STSong',serif}
+  .logic-step .content p{font-size:13px;color:var(--ink-2)}
+  .logic-step .content .src{font-size:12px;color:var(--clay-2);margin-top:4px;font-weight:600}
+
+  /* ===== 本书概况 ===== */
+  /* 视觉基调：一页安静的书稿，而不是一堆 UI 卡片。书名页 → 题记 → 正文 → 卷末注。
+     衬线体承载标题与引文（印刷书感），正文走无衬线保证阅读；暖纸色 + 细金线 + 疏朗留白。 */
+  .ov-wrap{font-family:Georgia,'Songti SC','STSong','Noto Serif SC',serif}
+  .ov-wrap .ov-ui{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif}
+
+  /* 书名页：暖纸渐变 + 细金框 + 居中扉页排版 */
+  .ov-hero{position:relative;background:linear-gradient(155deg,#FBF6EE 0%,#F5ECDD 50%,#FBF4E9 100%);border:1px solid var(--line);border-radius:4px;padding:40px 40px 36px;box-shadow:0 2px 18px rgba(143,63,38,.10);text-align:center}
+  .ov-hero::before{content:'';position:absolute;inset:10px;border:1px solid var(--gold-line);border-radius:2px;pointer-events:none}
+  .ov-cover{width:104px;height:138px;border-radius:3px;flex:none;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:40px;font-weight:700;margin-bottom:22px;box-shadow:0 8px 22px rgba(143,63,38,.28),0 1px 0 rgba(255,255,255,.2) inset}
+  .ov-hero-main{max-width:640px;margin:0 auto}
+  .ov-kicker{font-size:11px;font-weight:700;letter-spacing:4px;color:var(--clay-2);margin-bottom:14px;text-transform:uppercase;font-family:Georgia,serif}
+  .ov-title{font-size:30px;font-weight:800;margin-bottom:10px;letter-spacing:1px;line-height:1.35}
+  .ov-author{font-size:13.5px;color:var(--ink-2);margin-bottom:18px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-lead{font-size:15px;line-height:2.05;color:var(--ink);max-width:560px;margin:0 auto}
+  .ov-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;justify-content:center}
+  .ov-chip{font-size:12px;font-weight:600;color:var(--pine-2);background:rgba(255,253,249,.7);border:1px solid #C9DDD4;padding:5px 14px;border-radius:20px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-chip.warn{color:var(--gold-2);background:rgba(250,241,216,.6);border:1px solid var(--gold-line)}
+
+  /* 题记（epigraph）：居中、疏朗、带装饰分隔线 */
+  .ov-quote{position:relative;text-align:center;max-width:620px;margin:44px auto 0;padding:0 16px}
+  .ov-quote::before{content:'';display:block;width:44px;height:1px;background:var(--gold);margin:0 auto 26px}
+  .ov-quote .q{font-size:17px;line-height:2.1;color:var(--ink)}
+  .ov-quote .s{font-size:12.5px;color:var(--ink-3);margin-top:16px;letter-spacing:.5px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+
+  /* 正文区：纸面直接排版，细线分隔，取代卡片 */
+  .ov-sec{margin-top:48px}
+  .ov-sec > h3{font-size:17px;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:12px;letter-spacing:1px}
+  .ov-sec > h3::after{content:'';flex:1;height:1px;background:var(--line)}
+  .ov-body{font-size:15px;line-height:2.1;color:var(--ink-2)}
+  .ov-body p{margin-bottom:14px}
+  .ov-body p:last-child{margin-bottom:0}
+  .ov-body b{color:var(--ink);font-weight:700}
+  .ov-body::first-letter{}
+  .ov-prose2{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+  .ov-prose2 .col h4{font-size:15px;font-weight:800;margin-bottom:14px;color:var(--pine-2);letter-spacing:1px}
+
+  /* 章节结构：细线分隔的分栏条目，像目录页 */
+  .ov-parts{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .ov-part{display:flex;gap:20px;align-items:baseline;padding:20px 4px}
+  .ov-part + .ov-part{border-top:1px solid var(--line)}
+  .ov-part .no{width:30px;flex:none;font-size:15px;font-weight:700;color:var(--clay-2);font-family:Georgia,'Songti SC',serif}
+  .ov-part .txt{flex:1;min-width:0}
+  .ov-part .nm{font-size:15px;font-weight:700;margin-bottom:5px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .ov-part .ch{font-size:12px;font-weight:400;color:var(--ink-3);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-part .ds{font-size:13.5px;color:var(--ink-2);line-height:1.85;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+
+  /* 收益：两列文字封套，序号用衬线体大字 */
+  .ov-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:28px 44px}
+  .ov-gain{position:relative;padding-left:14px}
+  .ov-gain::before{content:attr(data-n);position:absolute;left:0;top:-6px;font-size:38px;font-weight:700;font-family:Georgia,'Songti SC',serif;color:var(--line-2)}
+  .ov-gain .gi{font-size:12px;font-weight:800;color:var(--clay-2);margin-bottom:7px;letter-spacing:2px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-gain h4{font-size:15px;font-weight:700;margin-bottom:6px;padding-left:14px}
+  .ov-gain p{font-size:13.5px;color:var(--ink-2);line-height:1.85;padding-left:14px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+
+  /* 适合 / 不适合：左右对比（保留用，但收敛为纸面感） */
+  .ov-fit{display:grid;grid-template-columns:1fr 1fr;gap:44px}
+  .ov-fit h4{font-size:15px;font-weight:800;margin-bottom:14px;letter-spacing:1px}
+  .ov-fit ul{margin:0;padding:0;display:flex;flex-direction:column;gap:12px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-fit li{font-size:13.5px;color:var(--ink-2);line-height:1.85;padding-left:22px;position:relative;list-style:none}
+
+  /* 步骤：四格，弱化边框，用序号点缀 */
+  .ov-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+  .ov-step{position:relative;padding-top:6px}
+  .ov-step .ov-sn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--clay);color:#fff;font-size:12px;font-weight:700;margin-bottom:14px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-step h4{font-size:14px;font-weight:700;margin-bottom:7px;line-height:1.6}
+  .ov-step p{font-size:12.5px;color:var(--ink-2);line-height:1.8;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+
+  .ov-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-cta button{background:var(--pine);color:#fff;border:none;font-family:inherit;font-size:13px;font-weight:600;padding:10px 20px;border-radius:4px;cursor:pointer;transition:.15s;letter-spacing:.5px}
+  .ov-cta button:hover{background:var(--pine-2);transform:translateY(-1px)}
+  .ov-cta button.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
+  .ov-cta button.ghost:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg);transform:none}
+  .ov-note{margin-top:48px;padding:18px 0 0 26px;font-size:12px;color:var(--ink-3);line-height:1.9;position:relative;border-top:1px solid var(--line);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+  .ov-note::before{content:'ℹ';position:absolute;left:0;top:21px;width:16px;height:16px;border-radius:50%;background:var(--ink-3);color:#fff;font-size:10px;font-weight:800;line-height:16px;text-align:center}
+  .ov-note b{color:var(--ink-2)}
+  @media (max-width:900px){ .ov-prose2,.ov-grid2{grid-template-columns:1fr} .ov-steps{grid-template-columns:repeat(2,1fr)} .ov-fit{grid-template-columns:1fr} }
+  @media (max-width:760px){ .ov-hero{flex-direction:column;align-items:center} .ov-steps{grid-template-columns:1fr} }
+
+  /* ===== 自测评估 ===== */
+  .qz-intro{margin-bottom:24px}
+  .qz-intro h3{font-size:17px;font-weight:800;margin-bottom:12px;font-family:Georgia,'Songti SC','STSong',serif}
+  .qz-intro p{font-size:14px;color:var(--ink-2);line-height:1.9}
+  .qz-card{background:var(--card);border:1px solid var(--line);border-radius:4px;margin-bottom:14px;box-shadow:0 1px 4px rgba(42,38,34,.04);overflow:hidden}
+  .qz-head{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;cursor:pointer}
+  .qz-tag{font-size:11px;font-weight:700;color:var(--gold-2);white-space:nowrap;padding:3px 9px;border-radius:20px;background:var(--gold-bg);margin-top:1px}
+  .qz-q{flex:1;font-size:14px;line-height:1.7;color:var(--ink)}
+  .qz-arrow{color:var(--ink-3);transition:.2s;margin-top:2px}
+  .qz-card.open .qz-arrow{transform:rotate(180deg)}
+  .qz-body{display:none;padding:0 18px 18px;border-top:1px solid var(--line);padding-top:14px}
+  .qz-card.open .qz-body{display:block}
+  .qz-label{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.5px;margin-bottom:5px}
+  .qz-ans p,.qz-trap p,.qz-explain p{font-size:13.5px;line-height:1.8;color:var(--ink-2)}
+  .qz-ans{background:var(--pine-bg);border-left:3px solid var(--pine);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px}
+  .qz-ans .qz-label{color:var(--pine-2)}
+  .qz-trap{background:var(--gold-bg);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px}
+  .qz-trap .qz-label{color:var(--gold-2)}
+  .qz-explain{background:var(--sunken);padding:10px 14px;border-radius:8px;margin-bottom:10px}
+  .qz-src{font-size:12px;color:var(--ink-3)}
+
+  /* ===== 案例库 ===== */
+  .case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px;align-items:start}
+  .case-card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .case-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+  .case-tag{font-size:11px;font-weight:700;color:var(--gold-2);letter-spacing:.3px;cursor:pointer;white-space:nowrap}
+  .case-tag:hover{color:var(--clay-2);text-decoration:underline}
+  .src-badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .src-badge.book{background:var(--pine-bg);color:var(--pine-2)}
+  .src-badge.study{background:var(--card);color:var(--pine-2);border:1px dashed var(--line-2)}
+  .src-badge.ai{background:var(--gold-bg);color:var(--gold-2)}
+  .case-card h4{font-size:16px;font-weight:700;margin-bottom:2px;font-family:Georgia,'Songti SC','STSong',serif}
+  .case-sec{margin-top:12px}
+  .case-sec .lb{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.5px;margin-bottom:4px;font-family:Georgia,'Songti SC','STSong',serif}
+  .case-sec p{font-size:13px;color:var(--ink-2);line-height:1.75}
+  .case-result{background:var(--sunken);border-left:3px solid var(--clay);border-radius:0 8px 8px 0;padding:10px 12px;margin-top:12px}
+  .case-result .lb{color:var(--clay-2)}
+  .case-result p{color:var(--ink);font-weight:600;font-family:Georgia,'Songti SC','STSong',serif}
+  .case-steps{margin:6px 0 0;padding:0;list-style:none;counter-reset:cs}
+  .case-steps li{position:relative;padding-left:25px;font-size:13px;color:var(--ink-2);line-height:1.7;margin-bottom:7px;counter-increment:cs}
+  .case-steps li:last-child{margin-bottom:0}
+  .case-steps li::before{content:counter(cs);position:absolute;left:0;top:3px;width:16px;height:16px;border-radius:50%;background:var(--pine-bg);color:var(--pine-2);font-size:10px;font-weight:700;line-height:16px;text-align:center}
+  .case-use{background:var(--clay-bg);border-radius:8px;padding:10px 12px;margin-top:12px}
+  .case-use .lb{color:var(--clay-2)}
+  .case-foot{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .case-src{font-size:11.5px;color:var(--ink-3);line-height:1.6}
+  .case-link{font-size:12px;color:var(--clay-2);font-weight:600;cursor:pointer;white-space:nowrap}
+  .case-link:hover{text-decoration:underline}
+  .case-card.brief .case-extra{display:none}
+  .case-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .case-filter{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .case-chip{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ink-2);background:var(--card);border:1px solid var(--line);cursor:pointer;transition:.15s}
+  .case-chip:hover{border-color:var(--pine);color:var(--pine)}
+  .case-chip.active{background:var(--pine);border-color:var(--pine);color:#fff}
+  .case-mode{font-size:12px;font-weight:600;color:var(--ink-2);cursor:pointer;padding:5px 12px;border:1px solid var(--line);border-radius:20px;background:var(--card)}
+  .case-mode:hover{border-color:var(--clay);color:var(--clay-2)}
+  .case-empty{padding:28px;text-align:center;color:var(--ink-3);font-size:13px;background:var(--card);border:1px dashed var(--line-2);border-radius:12px}
+  .switch{display:inline-flex;background:var(--sunken);border-radius:8px;padding:3px;margin-bottom:16px}
+  .switch button{border:none;background:transparent;padding:6px 14px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;border-radius:6px}
+  .switch button.active{background:#fff;color:var(--pine);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+  /* ===== 圈子话题 ===== */
+  .circle-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .circle-tab{padding:7px 15px;border-radius:20px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;border:1px solid var(--line);background:var(--card);transition:.15s}
+  .circle-tab.active{background:var(--pine);color:#fff;border-color:var(--pine)}
+  .topic-list{display:flex;flex-direction:column;gap:12px}
+  .topic-card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .topic-card .topic-q{font-size:15px;font-weight:600;margin-bottom:6px;font-family:Georgia,'Songti SC','STSong',serif}
+  .topic-card .topic-meta{font-size:12px;color:var(--ink-3);display:flex;gap:14px;flex-wrap:wrap}
+  .topic-card .topic-meta .hot{color:var(--red)}
+  .topic-card .join{margin-left:auto;font-size:13px;color:var(--clay-2);font-weight:700;cursor:pointer}
+
+  /* ===== 问答评测 ===== */
+  .quiz-layout{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:18px;align-items:start}
+  .chat-panel{background:var(--card);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 4px rgba(42,38,34,.04);display:flex;flex-direction:column;height:600px}
+  .chat-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .ai-avatar{width:34px;height:34px;border-radius:4px;background:linear-gradient(135deg,var(--pine),var(--pine-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}
+  .chat-head .chat-title{font-weight:700;font-size:15px;font-family:Georgia,'Songti SC','STSong',serif}
+  .chat-head .chat-sub{font-size:12px;color:var(--ink-3)}
+  .chat-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .msg{max-width:82%;display:flex;gap:10px}
+  .msg.ai{align-self:flex-start}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse}
+  .msg .bubble{padding:12px 16px;border-radius:14px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .msg.ai .bubble{background:var(--sunken);color:var(--ink);border-bottom-left-radius:4px}
+  .msg.user .bubble{background:var(--clay);color:#fff;border-bottom-right-radius:4px}
+  .msg .who{font-size:11px;color:var(--ink-3);margin-top:4px}
+  .msg.user .who{text-align:right}
+  .bubble .q-label{font-size:11px;font-weight:700;color:var(--gold-2);margin-bottom:4px;letter-spacing:.3px}
+  .chat-input{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--line)}
+  .chat-input textarea{flex:1;border:1px solid var(--line);border-radius:11px;padding:12px 14px;font-size:14px;font-family:inherit;resize:none;height:52px;outline:none;transition:.15s}
+  .chat-input textarea:focus{border-color:var(--clay-2)}
+  .chat-input button{border:none;background:var(--clay);color:#fff;font-weight:700;padding:0 22px;border-radius:11px;cursor:pointer;font-size:14px;transition:.15s}
+  .chat-input button:hover{background:var(--clay-2)}
+  .chat-input button:disabled{background:var(--line-2);cursor:not-allowed}
+  .quick-row{display:flex;gap:8px;padding:0 20px 6px}
+  .quick-btn{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;transition:.15s}
+  .quick-btn:hover{border-color:var(--clay-2);color:var(--clay)}
+
+  .verdict{padding:12px 16px;border-radius:12px;font-size:13px;margin-top:8px}
+  .verdict.mastered{background:var(--green-bg);color:var(--green)}
+  .verdict.partial{background:var(--yellow-bg);color:var(--yellow)}
+  .verdict.failed{background:var(--red-bg);color:var(--red)}
+  .verdict .v-title{font-weight:800;font-size:14px;display:block;margin-bottom:4px}
+  .score-bars{margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+  .score-dim{font-size:12px;color:var(--ink-2)}
+  .score-dim b{color:var(--ink)}
+
+  .quote-card{background:var(--gold-bg);border:1px solid var(--gold-line);border-radius:14px;padding:16px 18px;margin-top:6px}
+  .quote-card .q-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .quote-card .q-head .q-tag{font-size:12px;font-weight:800;color:var(--gold-2)}
+  .quote-card .q-head .q-src{font-size:12px;color:var(--ink-2)}
+  .quote-card blockquote{font-size:14px;line-height:1.75;color:var(--ink);border-left:3px solid var(--gold);padding-left:14px;font-style:normal}
+  .quote-card .read-done{margin-top:14px;border:none;background:var(--gold);color:#fff;font-weight:700;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s}
+  .quote-card .read-done:hover{background:#8F3F26}
+
+  .finish-card{background:linear-gradient(135deg,var(--clay),var(--clay-2));color:#fff;border-radius:14px;padding:22px;margin-top:6px}
+  .finish-card h4{font-size:17px;font-weight:700;margin-bottom:8px;letter-spacing:-.2px;font-family:Georgia,'Songti SC','STSong',serif}
+  .finish-card .finish-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .finish-card .btn-w{background:#fff;color:var(--clay-2);border:none;font-weight:700;font-size:14px;padding:9px 18px;border-radius:9px;cursor:pointer;transition:.15s}
+  .finish-card .btn-w:hover{background:#FFF6EE;transform:translateY(-1px)}
+  .finish-card .btn-w.done{background:rgba(255,255,255,.16);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);cursor:default;transform:none}
+  .finish-card .btn-w-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);font-weight:600;font-size:14px;padding:9px 18px;border-radius:9px;cursor:pointer;transition:.15s}
+  .finish-card .btn-w-ghost:hover{background:rgba(255,255,255,.13)}
+  .finish-card p{font-size:14px;opacity:.92}
+
+  /* ===== 掌握度侧栏 ===== */
+  .mastery-side{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:sticky;top:80px}
+  .mastery-side h4{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-family:Georgia,'Songti SC','STSong',serif}
+  .m-item{margin-bottom:16px}
+  .m-item .m-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .m-item .m-name{font-weight:600}
+  .m-item .m-val{font-weight:800}
+  .m-bar{height:8px;background:var(--sunken);border-radius:5px;overflow:hidden}
+  .m-fill{height:100%;border-radius:5px;transition:width .5s ease}
+  .m-state{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+  .m-state.mastered{background:var(--green-bg);color:var(--green)}
+  .m-state.partial{background:var(--yellow-bg);color:var(--yellow)}
+  .m-state.failed{background:var(--red-bg);color:var(--red)}
+  .m-state.pending{background:var(--sunken);color:var(--ink-3)}
+
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);font-size:14px;cursor:pointer;margin-bottom:16px;font-weight:600}
+  .back-link:hover{color:var(--clay-2)}
+
+  .graph-box{background:var(--sunken);border:1px solid var(--line);border-radius:4px;padding:8px;overflow-x:auto}
+  .graph-box svg{display:block;margin:0 auto}
+
+  /* ===== 上传 & 书架 ===== */
+  .hero-row{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .hero-row .hero-text{flex:1;min-width:260px}
+  .upload-btn{display:inline-flex;align-items:center;gap:8px;background:var(--clay);color:#fff;font-weight:700;font-size:14px;padding:12px 22px;border-radius:4px;cursor:pointer;border:none;transition:.15s;box-shadow:0 4px 14px rgba(143,63,38,.28)}
+  .upload-btn:hover{background:var(--clay-2);transform:translateY(-1px)}
+  .upload-btn .plus{font-size:18px;line-height:1;font-weight:800}
+  .section-head-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .status.read{background:var(--clay-bg);color:var(--clay)}
+  .status.paused{background:var(--sunken);color:var(--ink-2)}
+  .status.new{background:var(--clay-bg);color:var(--clay)}
+  /* ===== 全书思维导图 ===== */
+  .map-panel{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .map-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+  .map-group{display:flex;align-items:center;gap:6px}
+  .map-label{font-size:12px;color:var(--ink-3);font-weight:600;margin-right:2px}
+  .map-btn{background:var(--sunken);border:1px solid var(--line);color:var(--ink-2);font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;cursor:pointer;transition:.15s}
+  .map-btn:hover{border-color:var(--line-2);color:var(--ink)}
+  .map-btn.active{background:var(--pine);border-color:var(--pine);color:#fff}
+  .map-legend{margin-left:auto;gap:13px;flex-wrap:wrap}
+  .map-legend .lg{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2)}
+  .map-legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+  .dot.mastered{background:var(--green)} .dot.partial{background:var(--yellow)}
+  .dot.failed{background:var(--red)} .dot.pending{background:var(--line-2)}
+  .dot.src-book{background:var(--pine)} .dot.src-ai{background:var(--gold)}
+  .map-canvas{position:relative;height:560px;background:var(--sunken);border:1px solid var(--line);border-radius:4px;overflow:hidden;cursor:grab}
+  .map-canvas.dragging{cursor:grabbing}
+  .map-canvas svg{display:block;user-select:none}
+  #mapViewport.anim{transition:transform .24s cubic-bezier(.4,0,.2,1)}
+  @media (prefers-reduced-motion:reduce){ #mapViewport.anim{transition:none} }
+  .map-tip{position:absolute;left:12px;bottom:10px;font-size:11px;color:var(--ink-3);background:rgba(255,253,249,.88);padding:3px 10px;border-radius:20px;pointer-events:none}
+  .map-note{font-size:12px;color:var(--ink-3);margin-top:10px;line-height:1.7}
+  .map-note b{color:var(--ink-2);font-weight:600}
+  @keyframes tcFlash{from{box-shadow:0 0 0 3px var(--gold-line)}to{box-shadow:0 0 0 3px rgba(229,211,160,0)}}
+  .theory-card.flash{animation:tcFlash 1.5s ease-out}
+  .mm-node{cursor:default}
+  .mm-node.clickable{cursor:pointer}
+  .mm-node.clickable:hover .mm-box{stroke:var(--pine);stroke-width:2}
+  .mm-node.muted .mm-title{fill:var(--ink-3)}
+  .mm-box{fill:var(--card);stroke:var(--line-2);stroke-width:1}
+  .mm-title{font-size:13px;font-weight:600;fill:var(--ink)}
+  .mm-meta{font-size:11px;fill:var(--ink-3)}
+  .mm-toggle circle{fill:var(--card);stroke:var(--pine);stroke-width:1.5}
+  .mm-toggle text{fill:var(--pine);font-size:12px;font-weight:700;text-anchor:middle}
+  .card-actions{margin-top:12px}
+  .btn-unshelve{background:transparent;border:1px solid var(--line-2);color:var(--ink-2);font-family:inherit;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;transition:.15s}
+  .btn-unshelve:hover{border-color:var(--pine);color:var(--pine);background:var(--pine-bg)}
+  .btn-unshelve.btn-remove:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+  .shelf-hint{font-size:12px;color:var(--ink-3)}
+
+  .modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal.hidden{display:none}
+  .modal-mask{position:absolute;inset:0;background:rgba(42,33,26,.5);backdrop-filter:blur(2px)}
+  .modal-box{position:relative;background:var(--card);border-radius:4px;width:min(480px,100%);padding:26px;box-shadow:0 8px 28px rgba(42,38,34,.16);z-index:1;animation:pop .18s ease}
+  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .modal-head h3{font-size:17px;font-weight:800}
+  .modal-close{width:32px;height:32px;border-radius:4px;border:none;background:var(--sunken);color:var(--ink-2);font-size:16px;cursor:pointer;transition:.15s}
+  .modal-close:hover{background:var(--line-2);color:var(--ink)}
+  .modal-sub{font-size:13px;color:var(--ink-2);margin-bottom:18px}
+  .dropzone{border:2px dashed var(--line-2);border-radius:4px;padding:38px 20px;text-align:center;cursor:pointer;transition:.15s;color:var(--ink-2);background:var(--sunken)}
+  .dropzone:hover,.dropzone.drag{border-color:var(--clay-2);background:var(--sunken)}
+  .dropzone .dz-icon{font-size:34px;margin-bottom:10px;display:block}
+  .dropzone .dz-main{font-size:15px;font-weight:600;color:var(--ink)}
+  .dropzone .dz-sub{font-size:12px;color:var(--ink-3);margin-top:6px}
+  .dz-tags{display:flex;gap:6px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+  .dz-tag{font-size:11px;padding:3px 10px;border-radius:6px;background:var(--sunken);color:var(--ink-2);font-weight:600}
+  .file-box{display:flex;align-items:center;gap:12px;background:var(--sunken);border-radius:4px;padding:14px 16px;margin-bottom:18px}
+  .file-icon{font-size:26px}
+  .file-name{font-weight:700;font-size:14px;word-break:break-all}
+  .file-size{font-size:12px;color:var(--ink-3);margin-top:2px}
+  .stage{margin-bottom:14px}
+  .stage-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}
+  .stage-name{font-weight:600}
+  .stage-pct{color:var(--ink-2);font-weight:700}
+  .stage-bar{height:8px;background:var(--sunken);border-radius:5px;overflow:hidden}
+  .stage-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--clay),var(--clay-2));transition:width .3s ease}
+  .done-badge{display:flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:14px;margin-bottom:14px}
+  .done-badge .tick{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .modal-btn{border:none;padding:10px 20px;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+  .modal-btn.primary{background:var(--clay);color:#fff}
+  .modal-btn.primary:hover{background:var(--clay-2)}
+  .modal-btn.ghost{background:var(--sunken);color:var(--ink-2)}
+  .modal-btn.ghost:hover{background:var(--line-2)}
+
+  /* ===== 布局：侧边栏 + 主内容 ===== */
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:280px;flex-shrink:0;background:#2A4C43;height:100vh;position:sticky;top:0;overflow-y:auto;padding:20px 14px 24px;display:flex;flex-direction:column}
+  .main-area{flex:1;min-width:0}
+  .side-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:#F3F9F6;padding:4px 8px;cursor:pointer;margin-bottom:16px}
+  .side-logo .brand-mark{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--clay),var(--clay-2));color:#FFF6EE;font-weight:800;font-size:15px;letter-spacing:0;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.28)}
+  .side-logo .brand-name em{font-style:normal;color:rgba(255,255,255,.5);font-weight:500;font-size:13px;margin-left:2px}
+  .upload-btn-full{width:100%;justify-content:center;margin-bottom:22px;box-shadow:0 4px 14px rgba(0,0,0,.22)}
+  .side-group{margin-bottom:20px}
+  .side-group-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.42);padding:0 10px;margin-bottom:8px;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+  .side-group-title .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block}
+  .side-book{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:4px;cursor:pointer;transition:.15s}
+  .side-book:hover{background:rgba(255,255,255,.07)}
+  .side-book.active{background:rgba(255,255,255,.10);box-shadow:inset 3px 0 0 var(--clay)}
+  .side-book.active .side-name{color:#fff}
+  .side-book.active .side-meta{color:rgba(255,255,255,.6)}
+  .side-book.shelved{opacity:.42;background:transparent;box-shadow:none}
+  .side-book.shelved:hover{opacity:.72;background:rgba(255,255,255,.05)}
+  .side-book.shelved .side-name{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.4)}
+  .side-shelved-tag{margin-left:auto;flex-shrink:0;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.13);color:rgba(255,255,255,.7)}
+  .reading-empty{font-size:12px;color:rgba(255,255,255,.42);padding:9px 11px;border:1px dashed rgba(255,255,255,.16);border-radius:4px;cursor:pointer;transition:.15s;line-height:1.6}
+  .reading-empty:hover{border-color:rgba(255,255,255,.34);color:rgba(255,255,255,.72)}
+  .side-cover{width:34px;height:46px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.28)}
+  .side-name{font-size:14px;font-weight:600;line-height:1.3;color:rgba(255,255,255,.9)}
+  .side-meta{font-size:12px;color:rgba(255,255,255,.45);margin-top:1px}
+  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.10)}
+  .side-foot-link{font-size:13px;color:rgba(255,255,255,.72);padding:8px 10px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.15s}
+  .side-foot-link:hover{background:rgba(255,255,255,.08);color:#fff}
+  .side-foot-link.active{background:rgba(255,255,255,.12);color:#F0DFAE;font-weight:600}
+  .side-foot-link{gap:9px}
+  .side-foot-link .side-ico{flex:none;opacity:.85}
+  .side-foot-link .count{margin-left:auto;font-size:11px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.6);padding:1px 8px;border-radius:10px}
+  .side-foot-link.active .count{background:var(--gold);color:#3A2E0C}
+
+  /* ===== 已读完面板 ===== */
+  .finished-panel{max-width:680px}
+  .finished-head{display:flex;gap:22px;align-items:center;margin-bottom:20px}
+  .finished-cover{width:96px;height:132px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:30px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .finished-head h2{font-size:27px;font-weight:700;letter-spacing:-.4px}
+  .finished-head .author{color:var(--ink-2);font-size:14px;margin-top:4px}
+
+  @media(max-width:860px){
+    .quiz-layout{grid-template-columns:1fr}
+    .mastery-side{position:static}
+    .book-head{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+
+<!-- ================= 侧边栏 ================= -->
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-logo" onclick="showWelcome()">
+      <span class="brand-mark">赤</span>
+      <span class="brand-name">赤牙<em> · AI阅读</em></span>
+    </div>
+    <button class="upload-btn upload-btn-full" onclick="openUpload()"><span class="plus">＋</span> 上传电子书</button>
+
+    <div class="side-group">
+      <div class="side-group-title"><span class="dot"></span>正在精读</div>
+      <div class="side-book active" id="sideBookReading" onclick="openBook()">
+        <div class="side-cover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
+        <div>
+          <div class="side-name">思考，快与慢</div>
+          <div class="side-meta">掌握度 62%</div>
+        </div>
+        <span class="side-shelved-tag hidden" id="shelvedTag">已入架</span>
+      </div>
+      <div class="reading-empty hidden" id="readingEmpty" onclick="showShelf()">暂无正在精读的书 · 去书架选一本重新开始</div>
+    </div>
+
+    <div class="side-foot">
+      <div class="side-foot-link" id="navShelf" onclick="showShelf()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5z"/><path d="M3 9.2h18"/><path d="M7 6.5v.01M10 6.5v.01M13 6.5v.01M16 6.5v.01"/><path d="M6.5 15h4M6.5 18h4"/></svg>我的书架<span class="count" id="shelfCount">3</span></div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <!-- 欢迎页：图书馆入口感 -->
+    <main id="view-welcome" class="container">
+      <div class="wl-hero">
+        <div class="wl-kicker">赤牙 · AI阅读</div>
+        <h1 class="wl-title">把「读书」变成「真掌握」</h1>
+        <p class="wl-lead">AI 帮你提炼核心理论，再通过交互式提问检验你是否真的吃透了这本书。<br>不是「读过」，是「掌握」。</p>
+        <div class="wl-cta">
+          <button class="wl-btn" onclick="showShelf()">从书架开始</button>
+          <button class="wl-btn ghost" onclick="openBook('思考，快与慢')">体验演示书</button>
+        </div>
+      </div>
+
+      <div class="wl-feat">
+        <div class="wl-feat-item">
+          <div class="wl-feat-num">一</div>
+          <h4>理论骨架</h4>
+          <p>AI 提炼核心理论，关联学术界认可的来源理论，帮你定位它在知识地图上的位置。</p>
+        </div>
+        <div class="wl-feat-item">
+          <div class="wl-feat-num">二</div>
+          <h4>逻辑链 &amp; 案例</h4>
+          <p>每个理论都有验证依据和真实案例，不再「只知其名、不知其所以然」。</p>
+        </div>
+        <div class="wl-feat-item">
+          <div class="wl-feat-num">三</div>
+          <h4>互动评测</h4>
+          <p>AI 提问 → 判分 → 掌握度，反复不懂就精准推原文，读后再考。</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- 书架页 -->
+    <main id="view-shelf" class="container hidden">
+      <div class="hero" style="margin-bottom:6px">
+        <h1>我的书架</h1>
+        <p>温故而知新，可以为师矣。<span class="quote-src">—— 《论语 · 为政》</span></p>
+      </div>
+      <div class="section-title"><span class="dot"></span>读过的书</div>
+      <div class="book-grid" id="shelfGrid">
+      </div>
+    </main>
+
+<!-- ================= 视图2：书籍详情 ================= -->
+<main id="view-book" class="container hidden">
+  <div class="back-link" onclick="showWelcome()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>返回</div>
+
+  <!-- 书籍头部 -->
+  <div class="book-head">
+    <div class="cover-lg" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">
+      <div class="cover-title">思考，快与慢</div>
+      <div class="cover-author">丹尼尔·卡尼曼</div>
+    </div>
+    <div class="book-head-info">
+      <div class="tag-row">
+        <span class="tag">认知心理学</span>
+        <span class="tag">行为经济学</span>
+        <span class="tag blue">诺奖得主 · 丹尼尔·卡尼曼</span>
+      </div>
+      <h2>思考，快与慢</h2>
+      <div class="author">Thinking, Fast and Slow · 2011 年出版</div>
+      <div class="desc">卡尼曼以「双系统」模型为核心，系统梳理了人类判断与决策中的系统性偏差，是行为经济学的奠基之作。本书已被解析出 6 个核心理论。</div>
+      <div class="mastery-overview">
+        <div class="mastery-ring">
+          <div class="ring"><div class="inner">62%</div></div>
+          <div><div style="font-size:13px;font-weight:700">综合掌握度</div><div style="font-size:12px;color:var(--ink-3)">3 个理论已评测 · 继续提升</div></div>
+        </div>
+      </div>
+      <div class="book-head-actions">
+        <button class="btn-shelve" id="btnShelveHead" onclick="shelveCurrentBook()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>放入书架</button>
+        <span class="hint" id="shelveHint">读不下去也可以先收进书架 · 之后随时继续</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 大 Tab -->
+  <div class="tab-bar">
+    <div class="tab active" data-main="analysis" onclick="switchMain('analysis')"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>书籍解析</div>
+    <div class="tab" data-main="discuss" onclick="switchMain('discuss')"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>互动讨论</div>
+  </div>
+
+  <!-- ========== 书籍解析 ========== -->
+  <div id="main-analysis">
+    <div class="subtab-bar">
+      <div class="subtab active" data-sub="overview" onclick="switchSub('overview')">本书概况</div>
+      <div class="subtab" data-sub="map" onclick="switchSub('map')"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v10l6 4 6-4 6 4V7l-6-4-6 4-6-4z"/><path d="M9 3v14"/><path d="M15 7v14"/></svg></span>全书思维导图</div>
+      <div class="subtab" data-sub="theory" onclick="switchSub('theory')">① 核心理论 + 关联理论</div>
+      <div class="subtab" data-sub="logic" onclick="switchSub('logic')">② 验证依据 / 逻辑链</div>
+      <div class="subtab" data-sub="case" onclick="switchSub('case')">③ 核心理论案例</div>
+      <div class="subtab" data-sub="selfcheck" onclick="switchSub('selfcheck')">④ 书中自测</div>
+    </div>
+
+    <!-- 子tab0：本书概况 -->
+    <!-- (0) 本书概况：全书最先看到的一屏 —— 回答「这是一本什么书、值不值得我花时间」 -->
+    <div id="sub-overview" class="panel">
+      <div id="ovRoot"></div>
+    </div>
+
+    <!-- (1) 全书思维导图 -->
+    <div id="sub-map" class="panel hidden">
+      <div class="map-panel">
+        <div class="map-toolbar">
+          <div class="map-group">
+            <span class="map-label">布局</span>
+            <button class="map-btn active" id="btnLayoutMind" onclick="setMapLayout('mind')">思维导图</button>
+            <button class="map-btn" id="btnLayoutTree" onclick="setMapLayout('tree')">逻辑图</button>
+          </div>
+          <div class="map-group">
+            <button class="map-btn" onclick="zoomMap(1.25,true)" title="放大">＋</button>
+            <button class="map-btn" onclick="zoomMap(1/1.25,true)" title="缩小">－</button>
+            <button class="map-btn" onclick="fitMap(true)" title="适应窗口">适应</button>
+            <button class="map-btn" onclick="toggleAllMap()" id="btnFoldAll">折叠全部</button>
+          </div>
+          <div class="map-group map-legend">
+            <span class="lg"><i class="dot mastered"></i>已掌握</span>
+            <span class="lg"><i class="dot partial"></i>部分掌握</span>
+            <span class="lg"><i class="dot failed"></i>未掌握</span>
+            <span class="lg"><i class="dot pending"></i>待评测</span>
+            <span class="lg"><i class="dot src-book"></i>书中提及</span>
+            <span class="lg"><i class="dot src-ai"></i>AI 补充</span>
+          </div>
+        </div>
+        <div class="map-canvas" id="mapCanvas">
+          <svg id="mindmapSvg" width="100%" height="100%">
+            <defs>
+              <linearGradient id="mmRootGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#C0603C"/>
+                <stop offset="1" stop-color="#8F3F26"/>
+              </linearGradient>
+            </defs>
+            <g id="mapViewport">
+              <g id="mapLinks"></g>
+              <g id="mapNodes"></g>
+            </g>
+          </svg>
+          <div class="map-tip">拖动平移 · 滚轮缩放 · 点一级分支折叠 · 点理论节点跳到详解</div>
+        </div>
+        <p class="map-note">按原书<b>五大部分</b>展开（不是按 AI 抽取的理论列表），因此能看出某个理论在全书中的位置；节点左侧色条为该理论的掌握状态，三级节点标注来源是「书中提及」还是「AI 补充」。</p>
+      </div>
+    </div>
+
+    <!-- 子tab1：核心理论 -->
+    <div id="sub-theory" class="panel hidden">
+      <div class="card" style="margin-bottom:18px">
+        <h4 style="margin-bottom:4px">理论关联图谱</h4>
+        <p style="font-size:13px;color:var(--ink-2);margin-bottom:14px">左侧为书中核心理论，右侧为与之关联的、被学术界认可的理论。</p>
+        <div class="graph-box">
+          <svg viewBox="0 0 760 470" width="720" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif">
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--line-2)"/></marker>
+            </defs>
+            <g id="graph-links" stroke="var(--line-2)" stroke-width="1.6"></g>
+            <g id="graph-nodes"></g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="theory-list" id="theoryList"></div>
+    </div>
+
+    <!-- 子tab2：逻辑链 -->
+    <div id="sub-logic" class="panel hidden">
+      <div class="card" style="margin-bottom:16px">
+        <h4 style="margin-bottom:6px">如何读「验证逻辑链」</h4>
+        <p style="font-size:13px;color:var(--ink-2)">每条链展示一个核心理论从「实验/现象 → 推理 → 结论」的完整论证过程，点击节点可回看原文佐证。</p>
+      </div>
+      <div id="logicContainer"></div>
+    </div>
+
+    <!-- 子tab3：案例 -->
+    <div id="sub-case" class="panel hidden">
+      <div class="switch" id="caseSwitch">
+        <button class="active" data-case="book" onclick="switchCase('book')">书内案例</button>
+        <button data-case="real" onclick="switchCase('real')">现实世界案例</button>
+      </div>
+      <div class="case-tools">
+        <div class="case-filter" id="caseFilter"></div>
+        <div class="case-mode" id="caseMode" onclick="toggleCaseMode()">精简模式</div>
+      </div>
+      <div id="caseContainer" class="case-grid"></div>
+    </div>
+
+    <!-- 子tab4：自测评估 -->
+    <div id="sub-selfcheck" class="panel hidden">
+      <div class="qz-intro">
+        <h3>书中经典自测题</h3>
+        <p>以下题目来自《思考，快与慢》中引用的经典实验。做完后你会看到自己的答案与书中结论的对比——<b>不是为了打分，而是为了看见自己正在用哪套系统做判断</b>。</p>
+      </div>
+      <div id="qzContainer"></div>
+    </div>
+  </div>
+
+  <!-- ========== 互动讨论 ========== -->
+  <div id="main-discuss" class="hidden">
+    <div class="subtab-bar">
+      <div class="subtab active" data-sub="circle" onclick="switchSub('circle')">① 圈子讨论话题</div>
+      <div class="subtab" data-sub="quiz" onclick="switchSub('quiz')">② 提问·掌握度评测</div>
+    </div>
+
+    <!-- 圈子话题 -->
+    <div id="sub-circle" class="panel">
+      <div class="circle-tabs" id="circleTabs"></div>
+      <div class="topic-list" id="topicList"></div>
+    </div>
+
+    <!-- 问答评测 -->
+    <div id="sub-quiz" class="panel hidden">
+      <div class="quiz-layout">
+        <div class="chat-panel">
+          <div class="chat-head">
+            <div class="ai-avatar">AI</div>
+            <div>
+              <div class="chat-title">AI 陪读 · 掌握度评测</div>
+              <div class="chat-sub">苏格拉底式提问：由浅入深，答完看判分</div>
+            </div>
+          </div>
+          <div class="chat-body" id="chatBody"></div>
+          <div class="quick-row" id="quickRow">
+            <button class="quick-btn" onclick="fillSampleGood()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span>示例回答</button>
+            <button class="quick-btn" onclick="fillSampleBad()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>模拟答错</button>
+            <button class="quick-btn" onclick="resetQuiz()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>重新开始</button>
+          </div>
+          <div class="chat-input">
+            <textarea id="chatInput" placeholder="在这里输入你的回答…（按 Enter 发送）" onkeydown="onInputKey(event)"></textarea>
+            <button id="sendBtn" onclick="submitAnswer()">发送</button>
+          </div>
+        </div>
+        <div class="mastery-side">
+          <h4><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg></span>掌握度仪表盘</h4>
+          <div id="masteryList"></div>
+          <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
+            <div style="font-size:12px;color:var(--ink-3);margin-bottom:8px">评分维度：准确性 · 完整性 · 迁移性</div>
+            <div style="font-size:12px;color:var(--ink-2);line-height:1.8">
+              ≥80% <span class="m-state mastered">已掌握</span><br>
+              50–79% <span class="m-state partial">部分掌握</span><br>
+              &lt;50% <span class="m-state failed">未掌握</span>（连续 2 次触发原文推荐）
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+    <!-- 已读完面板 -->
+    <main id="view-finished" class="container hidden">
+      <div class="finished-panel">
+        <div class="finished-head">
+          <div class="finished-cover" id="finCover" style="background:linear-gradient(150deg,#2F5D50,#1C3B33)">原</div>
+          <div>
+            <div class="tag-row"><span class="tag blue" id="finTag">已读完</span></div>
+            <h2 id="finTitle">原则</h2>
+            <div class="author" id="finAuthor">瑞·达利欧 · 管理/决策</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4 style="margin-bottom:8px">综合掌握度 <span id="finMastery" style="color:var(--green)">85%</span></h4>
+          <p style="font-size:14px;color:var(--ink-2)" id="finDesc">你已读完本书，核心理论的掌握情况已保留。可随时「重新精读」巩固。</p>
+          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="modal-btn primary" id="btnReshelf" onclick="openBook()">重新精读</button>
+            <button class="modal-btn ghost" onclick="showShelf()">返回书架</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const THEORIES = [
+  {
+    id:'sys', idx:1, name:'双系统模型（系统 1 / 系统 2）', sub:'全书总框架',
+    def:'人的思考分为两套系统：系统 1 快速、自动、无意识、几乎不费力；系统 2 缓慢、理性、需要集中注意力、费力。日常判断大多由系统 1 主导，系统 2 常处于「偷懒」状态。',
+    eval:{impact:'认知科学与行为经济学最流行的心智框架之一，被广泛用于解释决策、教育、产品设计等领域。', debate:'学界普遍认为它更接近启发式隐喻而非严格机制，系统1/系统2并非大脑中物理分离的两套系统，Stanovich 本人后来也修正为「类型1/类型2加工」。'},
+    related:[
+      {name:'双加工理论（Dual-Process Theory）', meta:'Keith Stanovich & Richard West', link:'理论基础 / 认知心理学', def:'认知心理学框架：把认知分为「直觉/自动」与「反思/控制」两类加工系统，卡尼曼的系统1/系统2即采用此框架。', source:'book', pos:'第 1 章', year:2000},
+      {name:'认知负荷理论（Cognitive Load Theory）', meta:'John Sweller', link:'系统 2 的「费力」特性', def:'工作记忆容量有限，复杂任务占用大量认知资源，是「系统2费力」的认知基础。', source:'ai', year:1988}
+    ],
+    src:'第 1 章 · 一张愤怒的脸和一条乘法题'
+  },
+  {
+    id:'prospect', idx:2, name:'前景理论（Prospect Theory）', sub:'诺奖核心贡献',
+    def:'人们不是在评估「最终财富的绝对水平」，而是在评估「相对于参照点的收益与损失」，且对损失更敏感。它挑战了传统经济学的「理性人 + 期望效用最大化」假设。',
+    eval:{impact:'行为经济学的理论基石，卡尼曼凭此获 2002 年诺贝尔经济学奖，被引数十万次，重塑了金融、营销与政策研究。', debate:'批评集中在「参照点如何确定」缺乏统一机制，其「四重模式」的部分预测在可重复性检验中表现不一。'},
+    related:[
+      {name:'期望效用理论（Expected Utility Theory）', meta:'von Neumann & Morgenstern', link:'被挑战 / 对照的经典模型', def:'经典经济学假设：理性人按「期望效用最大化」决策，评估的是最终财富的绝对水平。', source:'book', pos:'第 26 章', year:1944},
+      {name:'参照点依赖（Reference Dependence）', meta:'Kahneman & Tversky', link:'前景理论的构成要素', def:'人评估得失看的是相对「参照点」的变化，而非财富的绝对水平。', source:'book', pos:'第 26 章', year:1979}
+    ],
+    src:'第 26 章 · 前景理论'
+  },
+  {
+    id:'loss', idx:3, name:'损失厌恶（Loss Aversion）', sub:'前景理论的推论',
+    def:'损失带来的心理痛苦，大约是同等金额收益带来快乐的 2 倍左右。因此人们会为了避免损失而做出「非理性」的决策。',
+    eval:{impact:'应用极广（营销定价、金融、政策设计），是前景理论最具传播力的推论之一。', debate:'Gal & Rucker（2018）等学者质疑其「无处不在」的普遍性，认为部分现象可用惰性或框架效应替代解释。'},
+    related:[
+      {name:'禀赋效应（Endowment Effect）', meta:'Richard Thaler', link:'同源现象 / 衍生', def:'人一旦拥有某物就会高估其价值，不愿以买入价卖出。', source:'book', pos:'第 27 章', year:1980},
+      {name:'处置效应（Disposition Effect）', meta:'Shefrin & Statman', link:'投资领域的应用', def:'投资者倾向过早卖出盈利资产、过久持有亏损资产的行为倾向。', source:'ai', year:1985}
+    ],
+    src:'第 28 章 · 框架与参照'
+  },
+  {
+    id:'anchor', idx:4, name:'锚定效应（Anchoring）', sub:'启发式之一',
+    def:'人们在估计不确定数值时，会不自觉地依赖一个「初始值」（锚点）进行调整，即使这个锚点是随机的，也会显著影响最终判断。',
+    eval:{impact:'可重复性最强、最稳健的认知偏差之一，在谈判、定价、司法判罚等领域有大量实证。', debate:'对「锚定 + 调整不足」的心理机制仍有争论，学界提出「选择通达模型」等替代解释。'},
+    related:[
+      {name:'启发式与偏差（Heuristics & Biases）', meta:'Tversky & Kahneman, 1974', link:'所属的经典研究框架', def:'人用有限信息判断时依赖心理捷径（启发式），因而产生系统性偏差的经典研究框架。', source:'book', pos:'第 11 章', year:1974},
+      {name:'调整不足（Insufficient Adjustment）', meta:'Tversky & Kahneman', link:'锚定的发生机制', def:'人从初始值出发估计时调整幅度不够，导致结果系统性偏离真实值。', source:'book', pos:'第 11 章', year:1974}
+    ],
+    src:'第 11 章 · 锚定效应'
+  },
+  {
+    id:'peakend', idx:5, name:'峰终定律（Peak-End Rule）', sub:'体验与记忆',
+    def:'人们对一段体验的记忆，主要取决于「峰值时刻」和「结束时刻」的感受，而非体验的平均值或总时长。',
+    eval:{impact:'深刻影响体验设计、医疗与服务业，是「体验经济」的重要理论依据。', debate:'后续研究质疑其普适性，认为「持续时间」在部分情境下确实影响记忆，效应强度因情境而异。'},
+    related:[
+      {name:'体验自我与记忆自我（Experiencing vs Remembering Self）', meta:'Kahneman', link:'同一理论的延伸', def:'体验自我活在当下，记忆自我事后评价；两者对同一段经历的评价常不一致。', source:'book', pos:'第 35 章', year:1997},
+      {name:'时间忽略（Duration Neglect）', meta:'Redelmeier & Kahneman', link:'过程的时长几乎不影响记忆', def:'人对一段体验的记忆几乎不受其持续时间影响，只看峰值与结尾。', source:'book', pos:'第 35 章', year:1996}
+    ],
+    src:'第 35 章 · 两个自我'
+  },
+  {
+    id:'frame', idx:6, name:'框架效应（Framing Effect）', sub:'前景理论的应用',
+    def:'同一个问题，仅仅因为「表述方式」（收益框架 vs 损失框架）不同，人们就会做出截然相反的选择。',
+    eval:{impact:'稳健且直接影响政策（助推）、医疗与风险沟通，是前景理论最直接的应用。', debate:'与前景理论同源，部分可重复性研究显示其效应大小在不同人群与文化间存在差异。'},
+    related:[
+      {name:'前景理论（Prospect Theory）', meta:'Kahneman & Tversky', link:'框架效应的理论根源', def:'评估相对于参照点的收益与损失、且对损失更敏感，是框架效应的理论根源。', source:'book', pos:'第 34 章', year:1979},
+      {name:'助推（Nudge）', meta:'Richard Thaler & Cass Sunstein', link:'把框架效应用于政策与产品设计', def:'通过设计「选择架构」（如默认选项），在不限制自由的前提下引导更优决策。', source:'book', pos:'第 34 章', year:2008}
+    ],
+    src:'第 34 章 · 框架与真实'
+  }
+];
+
+const LOGIC = {
+  frame: {
+    title:'框架效应 · 验证逻辑链',
+    steps:[
+      {t:'实验', d:'亚洲疾病问题：同一场疫情，两组人被问相同的问题，但措辞不同。', s:'原文 · 第 34 章'},
+      {t:'观察', d:'「200 人得救」的正向框架下，72% 选择保守方案；「400 人死亡」的负向框架下，78% 选择冒险方案。', s:'Kahneman & Tversky (1981)'},
+      {t:'推理', d:'选项的客观结果完全等价，唯一变化是「收益/损失」的表述 → 选择发生系统性逆转。', s:''},
+      {t:'结论', d:'决策被「框架」左右，违背了理性的描述不变性（Invariance）假设。', s:'框架效应'}
+    ]
+  },
+  anchor: {
+    title:'锚定效应 · 验证逻辑链',
+    steps:[
+      {t:'实验', d:'让被试转动一个「随机数字转盘」，再估计「非洲国家占联合国的比例」。', s:'原文 · 第 11 章'},
+      {t:'观察', d:'转盘停在 10 的人平均估计 25%；停在 65 的人平均估计 45%——一个明显随机的数字显著拉动了估计值。', s:'Tversky & Kahneman (1974)'},
+      {t:'推理', d:'人们会「锚定 + 不充分调整」，从锚点出发却调整得远远不够。', s:''},
+      {t:'结论', d:'无关的初始值会系统性地污染判断，锚定效应广泛存在于定价、谈判、评估中。', s:'锚定效应'}
+    ]
+  },
+  sys: {
+    title:'双系统模型 · 验证逻辑链',
+    steps:[
+      {t:'现象', d:'阅读一句「愤怒的表情 + 乘法题」，你能瞬间判断情绪，却需要费力才能算出 17×24。', s:'原文 · 第 1 章'},
+      {t:'实验', d:'瞳孔测量：做乘法时瞳孔明显放大，反映系统 2 的认知努力；回答简单联想时几乎无变化。', s:'Kahneman & Beatty'},
+      {t:'推理', d:'「快而自动」与「慢而费力」是两种可区分的认知模式，且系统 2 需要「注意力的预算」。', s:''},
+      {t:'结论', d:'人大部分时间被系统 1 接管，系统 2 惰性运转——这是后续所有认知偏差的总根源。', s:'双系统模型'}
+    ]
+  },
+  loss: {
+    title:'损失厌恶 · 验证逻辑链',
+    steps:[
+      {t:'实验', d:'抛硬币赌博：50% 概率输 100 元、50% 概率赢 X 元，问被试 X 要多大才愿意赌。', s:'原文 · 第 28 章'},
+      {t:'观察', d:'多数人要求 X ≥ 200 元才愿意参与，即「收益需约为损失的 2 倍」才能抵消对损失的恐惧。', s:'Kahneman & Tversky'},
+      {t:'推理', d:'损失的心理权重高于等额收益，价值函数在损失区间更陡峭。', s:''},
+      {t:'结论', d:'损失厌恶驱动了大量「回避损失」的非理性行为，是前景理论的关键推论。', s:'损失厌恶'}
+    ]
+  }
+};
+
+/* ================= 本书概况 ================= */
+/* 书籍解析的第一屏。前面几屏全是「干货」，这一屏负责给温度与背景：
+   先回答「这是一本什么书、为什么值得读、我该怎么读」，再进入结构化的理论与案例。
+   内容为 AI 依据公开资料与原书目录、前言整理，不是原文摘录；生平、获奖、章节结构均为公开可查事实。 */
+const BOOK_OVERVIEW = {
+  title:'思考，快与慢',
+  author:'丹尼尔·卡尼曼 Daniel Kahneman · 认知心理学 / 行为经济学',
+  lead:'这是一本讲「人为什么会判断失误」的书。它给出一个更让人不安、也更实用的结论：<b>错误不是随机的，它们有稳定的模式</b>——可以被命名、被预判、被提前设防。',
+  meta:['原书 38 章 · 5 大部分','6 个核心理论','2002 年诺贝尔经济学奖'],
+  warn:['建议慢读 · 不是操作手册'],
+  quote:{t:'我会邀请他们把这个故事读完：读这本书的目的，不是为了获得知识和逻辑，而是为了让自己看事情的方式发生一点改变。',
+         s:'—— 引言 · 丹尼尔·卡尼曼'},
+  origin:[
+    '卡尼曼是心理学家，却在 2002 年拿到了诺贝尔经济学奖。原因是他和搭档<b>阿莫斯·特沃斯基（Amos Tversky）</b>用一系列实验证明了一件不太受欢迎的事：经济学里那个「理性人」并不存在——人在不确定下的判断会系统性地偏离理性，而且偏离的方向是可以预测的。',
+    '两人的合作方式在学术史上很少见：几乎所有论文都共同署名，连署名顺序都不计较。卡尼曼形容那种状态是「像一个人一样思考」。特沃斯基于 1996 年去世，享年 59 岁；诺贝尔奖不追授逝者，这个奖最终只落在卡尼曼一人头上。他此后多次公开说过同一句话：<b>这个奖本该是我们两个人的</b>。',
+    '这本书是他几十年研究的一次总结。不是论文集，是一本写给普通读者的书——目的很具体：<b>让读者拿到一套谈论判断与决策的词汇</b>。'
+  ],
+  ambition:[
+    '卡尼曼在引言里反复强调一件事：他想要的是一种「看得见」的能力。就像放射科医生一眼能在 X 光片上看出异常，他希望读者能在一闪而过的念头里，认出自己正在犯的是哪一类错误。',
+    '他也明确说过这不是操作手册。它不提供「遇到情况 A 就做 B」的清单，提供的是识别的语言——<b>先能看见，才谈得上改正</b>。',
+    '还有一句诚实的话值得提前知道：这本书要慢慢读。书中不少结论在后来的可重复性检验中受到过质疑，卡尼曼本人也公开承认过其中一部分问题。带着这个前提读，比把它当圣经读收获更大。'
+  ],
+  parts:[
+    {n:'1', name:'两个系统', ch:'9 章',
+     desc:'直觉的系统 1 与理性的系统 2 如何分工。这是全书的地基，后面所有的偏差都长在这上面。'},
+    {n:'2', name:'启发式与偏差', ch:'9 章',
+     desc:'当问题变难，系统 1 会偷偷把一个难题换成一道简单的题——换完它自己并不知道。'},
+    {n:'3', name:'过度自信', ch:'6 章',
+     desc:'为什么专家的长期预测常常不如一条简单公式；以及「事后诸葛亮」是如何改写记忆的。'},
+    {n:'4', name:'选择与风险', ch:'10 章 · 全书篇幅最长',
+     desc:'全书最核心的部分：前景理论、损失厌恶、框架效应都在这里。本产品取用的理论主要来自这一部分。'},
+    {n:'5', name:'两个自我', ch:'4 章',
+     desc:'经历一件事的「体验自我」与记住一件事的「记忆自我」并不一致，而替你做决定的往往是后者。'}
+  ],
+  gains:[
+    {gi:'先能看见', t:'给错误起名字', d:'不再笼统地说「我判断错了」，而是能指出：这是锚定、这是可得性、这是过度自信。能命名的问题才可能被解决。'},
+    {gi:'找到参照点', t:'知道自己站在哪一侧', d:'谈判、定薪、投资之前先问一句：我现在处在收益区还是损失区？这两侧该做的事完全相反。'},
+    {gi:'判断体检', t:'分清什么时候该信直觉', d:'直觉在熟悉、反馈及时的环境里非常可靠；在陌生、反馈滞后的环境里几乎必然出错。这是全书最实用的一条分界线。'},
+    {gi:'体验 ≠ 记忆', t:'理解记忆如何改写体验', d:'一段体验被记住的样子，和经历它时完全不同。这解释了为什么「追求幸福」这件事本身就充满陷阱。'}
+  ],
+  fit:{
+    yes:['需要频繁做判断与决策的人：投资、管理、招聘、谈判、产品',
+         '愿意先接受「我的直觉不可靠」这个前提的人',
+         '想要一套可复用的判断语言，而不是一份照着做的清单的人'],
+    no:['想找操作手册的人：它讲「为什么会错」，不给行动清单',
+        '打算快读的人：38 章、节奏偏慢，卡尼曼本人建议慢慢读',
+        '期待结论都铁板钉钉的人：部分发现后来面临可重复性争议，书中也有提及']
+  },
+  steps:[
+    {t:'先看全书思维导图（约 3 分钟）', d:'不要一上来就读正文。先建立全书坐标，知道每个理论在书里的位置，后面才挂得住。'},
+    {t:'挑 1–2 个离你工作最近的理论精读', d:'不必按顺序。做 HR 的从锚定与框架读起，做投资的从前景理论与损失厌恶读起，效率高得多。'},
+    {t:'用案例检验：能不能解释你最近做的一个决定', d:'看懂案例 ≠ 会用。能拿它解释自己上周做的一个真实判断，才算真的读懂了。'},
+    {t:'做一次掌握度评测，没过的回原文补读再考', d:'这是本产品唯一建议「读第二遍」的地方——只补读答错的那一段原文，不用重读全书。'}
+  ],
+  note:'本概况由 AI 依据公开资料与原书目录、前言整理，<b>不是原文摘录</b>。作者生平、获奖信息与章节结构为公开可查事实；「建议怎么读」为本产品观点。原书观点请以原文为准。'
+};
+
+/* 案例的目标不是「举个例子」而是「让人真正理解理论」——所以每个案例都必须讲清四件事：
+   场景（发生了什么）→ 结果（反直觉的数据）→ 机制（为什么会这样，拆成 2–3 步，每一步都对应理论的一个环节）→ 迁移（我能怎么用）。
+   来源必须区分三类：book = 原书实验（附章节）；study = 有出处的外部真实研究；ai = AI 推演示例（明确说明不是书中内容）。 */
+const CASES = {
+  book: [
+    {tid:'sys', tag:'双系统模型', title:'瞳孔：心智负荷的窗口',
+     scene:'让被试心算（比如听到一个数字就加 3 再念出来），同时用红外摄像记录瞳孔直径与心率。',
+     result:'任务难度每升一级，瞳孔就放大一档；当难度超出能力上限时，瞳孔不再继续放大——系统 2 直接「放弃」了。',
+     why:'系统 2 的「费力」不是比喻，是有生理成本的；瞳孔直径就是心智努力的实时仪表盘。',
+     steps:['系统 2 需要占用一份有限的注意力预算，占用多少能被瞳孔直径实时读出。',
+            '预算见底时，系统 2 会主动退出，把判断权交回给省力的系统 1。',
+            '此时你并非「判断失误」，而是根本没有在做判断——这是最容易出错的状态。'],
+     use:'把「读一段话要不要回读第二遍」当成负荷警报：一旦需要回读，说明任务已逼近你的系统 2 上限，这时做的决定最不可靠，推迟它比硬扛更划算。',
+     src:{t:'book', text:'第 1–2 章 · 系统 1 与系统 2（源自 Kahneman & Beatty 的瞳孔研究）'}},
+    {tid:'sys', tag:'双系统模型', title:'琳达问题：少即是多',
+     scene:'琳达，31 岁，单身，坦率、非常聪明，主修哲学。学生时代深切关注歧视与社会公正，也参加过反核示威。问：她更可能是「银行柜员」，还是「银行柜员且积极参与女权运动」？',
+     result:'多数人（研究中约 85–90% 的被试，包括受过统计训练的研究生）选了后者——但两件事同时发生的概率，不可能高于其中任何一件。',
+     why:'系统 1 用「像不像」（代表性）替代了「概率有多高」，系统 2 懒得做校验，直接放行了直觉答案。',
+     steps:['系统 1 自动评估描述与典型形象的匹配度，这是它的默认动作。',
+            '细节越典型，主观可能性就越高——哪怕细节越多、条件越苛刻，客观概率只会更低。',
+            '系统 2 本应做一次概率校验（合取 ≤ 单个事件），但它默认信任系统 1 的直觉。'],
+     use:'下判断前先问一句：这是我算出来的概率，还是它「看起来像」。做人才评估、投资判断、风险排查时尤其要问。',
+     src:{t:'book', text:'第 15 章 · 琳达：少即是多'}},
+    {tid:'prospect', tag:'前景理论', title:'确定性效应：两组镜像选择',
+     scene:'问题一（收益区）：A 确定得到 ¥240；B 有 25% 概率得到 ¥1000。问题二（损失区）：C 确定损失 ¥750；D 有 75% 概率损失 ¥1000。两组问题的期望值几乎镜像对称。',
+     result:'问题一约 84% 选 A（面对确定的收益，人变保守）；问题二约 87% 选 D（面对确定的损失，人反而要赌一把）。同一批人的偏好完全反转。',
+     why:'人不是按「最终财富状态」算账，而是按「相对参照点的变化」算账，并且会把「确定」这件事的权重大幅放大。',
+     steps:['决策前先出现一个参照点（通常是现状）。',
+            '价值函数在参照点两侧不对称：收益区是凹的（规避风险），损失区是凸的（偏好赌一把）。',
+            '概率还会被主观加权：靠近「确定」时权重发生跳变，这就是确定性效应。'],
+     use:'要说服一个保守的人，先看清他站在参照点的哪一侧。处在收益区的人劝他别冒险是有效的；处在损失区的人，你再讲稳健也没用——他本来就在找机会翻盘。',
+     src:{t:'book', text:'第 29 章 · 四重模式'}},
+    {tid:'loss', tag:'损失厌恶', title:'抛硬币赌局',
+     scene:'抛一枚公平硬币。反面你付我 ¥100，正面我付你 ¥X。X 至少给到多少，你才愿意赌这一把？',
+     result:'多数人开口要 ¥200–250。也就是说，损失的心理重量约为同等收益的 2 倍——这正是书里反复出现的那个系数。',
+     why:'价值函数在参照点左侧比右侧陡得多，「失去」带来的痛苦远大于「得到」的快乐。',
+     steps:['先有一个参照点（通常是现状，也就是「什么都没发生」）。',
+            '损失侧的斜率约为收益侧的 2 倍，同一个数字在两边的分量并不相等。',
+            '于是任何「可能失去」的选项都必须被加价补偿，才有人肯接受。'],
+     use:'推动改变时，把表述从「你将获得」换成「你会避免失去」，转化率通常更高。但注意反向风险：对已经感到自己在失去的人施加压力，他会更加冒险。',
+     src:{t:'book', text:'第 26 章 · 前景理论'}},
+    {tid:'anchor', tag:'锚定效应', title:'幸运轮盘',
+     scene:'让被试先转一个标着 1–100 的轮盘，转出一个随机数字（10 或 65；被试明知是随机的），再问：非洲国家在联合国中的占比是多少？',
+     result:'转到 10 的那组中位估计约 25%，转到 65 的那组约 45%。一个明知道随机的数字，把答案拉开了 20 个百分点。',
+     why:'锚定不是「被说服」，而是「从锚点出发向上或向下调整，但调整远远不够」。',
+     steps:['锚点会先激活与它相符的记忆与联想（系统 1 的选择性激活）。',
+            '接着从锚点出发做调整，而不是从零开始独立估值。',
+            '调整在「好像不那么离谱」时就停了下来——判断于是留在锚点附近。'],
+     use:'谈判里先出价的人设定了讨论区间；反制办法是自己先定好标准再听对方报价，并主动要求对方给出成本依据，把锚点从对方手里拿回来。',
+     src:{t:'book', text:'第 11 章 · 锚定效应'}},
+    {tid:'frame', tag:'框架效应', title:'亚洲疾病问题',
+     scene:'预计 600 人将死于一种疾病。正框架：方案 A 确定救活 200 人；方案 B 有 1/3 概率救活 600 人。负框架：方案 C 确定死亡 400 人；方案 D 有 1/3 概率无人死亡。A 与 C、B 与 D 客观完全等价。',
+     result:'正框架下约 72% 选 A（保守），负框架下约 78% 选 D（冒险）。同一个人，换一套说法就反转了。',
+     why:'描述改变了参照点：「救活」让人待在收益区（规避风险），「死亡」让人掉进损失区（宁可赌一把）。',
+     steps:['描述先设定参照点——是「600 人都会死」还是「0 人死亡」。',
+            '参照点决定你落在价值函数的哪一侧。',
+            '两侧的风险态度相反，于是偏好发生反转，而客观结果自始至终没变。'],
+     use:'汇报前先想清楚参照点：要推动变革用「不做会失去什么」，要稳住军心用「做成了能得到什么」。同一份数据，框架选错，结论就反了。',
+     src:{t:'book', text:'第 34 章 · 框架与现实'}},
+    {tid:'peakend', tag:'峰终定律', title:'结肠镜检查',
+     scene:'A 组按常规做完结肠镜；B 组在检查结束后，让镜体在体内多停留约一分钟再退出（结束时的痛感更轻）。B 组承受的总痛苦更多、时间更长。',
+     result:'B 组事后对「整体痛苦程度」的回忆评分反而更低，后续复查的意愿也更高。增加痛苦，竟然改善了对痛苦的记忆。',
+     why:'记忆自我不对每一秒的痛苦求和，它只抽样「最痛的那一刻」和「最后那一刻」。',
+     steps:['体验自我逐秒感受，记忆自我只负责讲故事。',
+            '故事只取两个样本：峰值与终点。',
+            '时长被忽略（duration neglect）——多痛的那一分钟，根本不会进入记忆。'],
+     use:'别把预算平均分给每个环节。服务、课程、产品，都先找到「峰值」和「结尾」两处集中投放；同时优先消灭负面峰值，一次崩溃会盖掉十次顺畅。',
+     src:{t:'book', text:'第 35 章 · 两个自我（源自 Redelmeier & Kahneman 的结肠镜研究）'}}
+  ],
+  real: [
+    {tid:'loss', tag:'损失厌恶', title:'散户为什么「卖赢持亏」',
+     scene:'手里两只股票，一只浮盈 20%，一只浮亏 20%，现在急需用钱，必须卖掉一只。',
+     result:'Odean（1998）追踪了上万个个人账户：投资者卖出盈利股的概率显著高于卖出亏损股；而被卖掉的盈利股，此后一年平均比被留在手里的亏损股多跑赢约 3 个百分点——被捂住的恰恰是更差的资产。',
+     why:'卖出亏损股 = 把账面浮亏变成确定损失 = 亲口承认自己判断错了，这份痛苦被损失厌恶放大了一倍。',
+     steps:['参照点被死死钉在「买入成本价」上，而不是「未来的预期收益」。',
+            '平掉亏损会确认损失，触发约 2 倍的心理痛苦。',
+            '于是选择「再等等看」，把本该今天做的决策推迟给未来。'],
+     use:'把参照点从买入价换成「这只标的值不值得继续持有」。写下一句话自检：如果今天我是空仓，我还会买它吗？',
+     src:{t:'study', text:'Odean 1998 · 处置效应（Shefrin & Statman 1985）'}},
+    {tid:'prospect', tag:'前景理论', title:'薪资谈判里的参照点',
+     scene:'候选人期望 ¥25k，市场行情 ¥28k，你直接开出 ¥26k。同一笔钱，说成「比你期望高 1k」还是「低于市场价 2k」，对方的感受完全不同。',
+     result:'同一个绝对数字，因为参照点不同，一边被感知为收益，一边被感知为损失——而处在损失区的人，会用「我再找一家」的冒险来回应。',
+     why:'价值是相对参照点算出来的，不是由绝对值决定的。谁先设定参照点，谁就定义了这次谈判的输赢坐标。',
+     steps:['对方带着一个内部参照点入场：上一份薪资、市场行情或自我期望。',
+            '你的出价成为新的锚点，并把参照点重置到它附近。',
+            '落在参照点下方会被当成损失，触发反抗，而不是讨价还价。'],
+     use:'报价前先问清对方的参照点是什么，再决定要不要先出牌。如果给出的数字必然低于对方期望，就先提供一个可信的「为什么」，把参照点移到你这一侧。',
+     src:{t:'ai', text:'AI 推演示例 · 由前景理论推演至 HR 场景，非书中原例'}},
+    {tid:'anchor', tag:'锚定效应', title:'电商的划线价',
+     scene:'商品页写着「原价 ¥999，现价 ¥399」，而那个「原价」从未真正成交过。',
+     result:'划线价不必真实就能生效：它把你的判断从「这东西值不值 399」偷换成了「我比原价省了 600」。',
+     why:'锚点一旦落下，你就是在它附近做调整，而不是从零独立估值。',
+     steps:['高锚点先激活「这个东西很贵」的联想。',
+            '从 ¥999 往下调整到 ¥399，感觉已经省了一大截。',
+            '调整在「划算」的直觉处就停了，绝对价值从未被单独评估过。'],
+     use:'看到任何划线价、限时折扣、原价对比，先问一句：没有那个原价，我还会买吗？把锚点抹掉，重新估值一次。',
+     src:{t:'ai', text:'AI 推演示例 · 无单一权威出处'}},
+    {tid:'frame', tag:'框架效应', title:'医生怎么说，患者怎么选',
+     scene:'肺癌患者要在手术与放疗之间做选择。医生用两种方式描述同一份统计：A「术后 1 个月存活率 90%」；B「术后 1 个月内有 10% 死亡」。',
+     result:'McNeil 等（1982）：听到「存活率 90%」的组选择手术的比例约 44%，听到「死亡率 10%」的组只有约 18%——连受过统计训练的医生也未能免疫。',
+     why:'「存活」把人放在收益区（保守地选择确定的），「死亡」把人推进损失区（宁可赌另一种方案）。',
+     steps:['同一统计量的两种描述，设定了两个不同的参照点。',
+            '参照点决定价值函数的哪一侧被激活。',
+            '两侧的风险态度相反，于是选择发生反转。'],
+     use:'向领导或客户汇报坏消息时，先确认你想让他落在哪一侧；更稳妥的做法是同时给出两种表述，让他看到完整的坐标系。',
+     src:{t:'study', text:'McNeil, Pauker, Sox & Tversky 1982 · NEJM'}},
+    {tid:'anchor', tag:'锚定效应', title:'面试的第一印象（HR 场景）',
+     scene:'一位候选人第一道题答得极漂亮，后面四道都平平；另一位开场紧张，后面越答越好。两位实际水平接近。',
+     result:'多数面试官会给第一位更高的总分。第一份强回答成了锚，后面四个维度的评分都在它附近做「不充分调整」。',
+     why:'锚定 + 光环效应 + 证实偏差三者叠加：锚定拉高起点，光环把后续证据同化，证实偏差只收集支持结论的信息。',
+     steps:['首个强信号设定了评分锚点。',
+            '后续各维度从锚点出发做不充分的调整，而不是独立打分。',
+            '面试官开始不自觉地寻找能支持第一印象的证据。'],
+     use:'结构化面试的三件事：评分标准必须「先」于面试确定；每个维度先独立打分再讨论；面试官在交换意见之前各自提交评分表。',
+     src:{t:'ai', text:'AI 推演示例 · HR 场景，非书中原例'}},
+    {tid:'peakend', tag:'峰终定律', title:'产品该把资源投在哪',
+     scene:'一个流程平均体验尚可，但中段有一个「卡住」的时刻，结尾草草了事；另一个流程中段一样，结尾给出清晰的完成反馈与下一步指引。',
+     result:'用户记住的是「卡住的那一刻」和「最后一屏」，不是平均体验。改结尾的性价比，通常高于把每一步都均匀优化。',
+     why:'记忆自我只取峰值与终点，时长与平均值几乎不进入记忆。',
+     steps:['逐秒的体验最终被压缩成一段故事。',
+            '故事由峰值与结尾构成，其余部分被丢弃。',
+            '因此「总时长」和「平均满意度」对用户留存几乎没有解释力。'],
+     use:'先做一次流程走查，标出峰值点与结束点，把大部分体验预算投在这两处；同时优先消除负面峰值。',
+     src:{t:'ai', text:'AI 推演示例 · 由峰终定律推演'}},
+    {tid:'sys', tag:'双系统模型', title:'默认选项的力量',
+     scene:'美国一家公司把养老金计划从「要参加需主动填表」改成「自动加入，不想参加再退出」。合同、选项、收益完全没变，只改了默认项。',
+     result:'Madrian & Shea（2001）：三个月内的参与率从约 49% 跳到 86%。Thaler & Benartzi 的「明天储蓄更多」方案，则把储蓄率从 3.5% 提到 13.6%。',
+     why:'系统 1 默认「照做最省力」，系统 2 只在必要时才启动——而「要不要改掉默认」这件事，通常不足以唤醒系统 2。',
+     steps:['任何选择都存在一个默认项，它不需要被说明就已经生效。',
+            '系统 1 沿阻力最小的路径走，也就是接受默认。',
+            '退出需要主动决策，主动决策需要系统 2，于是多数人不动。'],
+     use:'制度设计的第一问不是「怎么说服大家」，而是「默认项是什么」。招聘流程、报销规则、OKR 的默认值——改默认项的收益，远大于做一次培训。',
+     src:{t:'study', text:'Madrian & Shea 2001；Thaler & Benartzi 2004'}}
+  ]
+};
+
+const CIRCLES = {
+  econ:{name:'行为经济学', topics:[
+    {q:'前景理论如何挑战了「理性人 + 期望效用最大化」的主流假设？', meta:['热度 9.2k','关联：前景理论','热议中']},
+    {q:'损失厌恶与禀赋效应：为什么「拥有」会改变你对物品的估值？', meta:['热度 6.8k','关联：损失厌恶','关联：禀赋效应']},
+    {q:'框架效应对「理性选择理论」的冲击有多大？', meta:['热度 5.1k','关联：框架效应']}
+  ]},
+  invest:{name:'投资 / 金融', topics:[
+    {q:'为什么散户总是「卖赢持亏」？损失厌恶如何毁掉你的收益？', meta:['热度 12.4k','关联：损失厌恶','关联：处置效应']},
+    {q:'锚定效应如何让投资者「死守成本价」不肯止损？', meta:['热度 8.9k','关联：锚定效应']},
+    {q:'框架效应：财报措辞如何影响市场情绪？', meta:['热度 4.2k','关联：框架效应']}
+  ]},
+  mkt:{name:'营销 / 增长', topics:[
+    {q:'划线价、锚定价：锚定效应如何拉升转化率？', meta:['热度 7.6k','关联：锚定效应']},
+    {q:'「默认选项」与助推（Nudge）在产品设计中的 10 个经典应用', meta:['热度 6.3k','关联：双系统模型','关联：助推']},
+    {q:'峰终定律：为什么「结尾体验」比平均体验更重要？', meta:['热度 5.5k','关联：峰终定律']}
+  ]},
+  hr:{name:'HR / 管理', topics:[
+    {q:'面试官的第一印象偏差：锚定效应如何影响录用决策？', meta:['热度 5.8k','关联：锚定效应','HR 专属']},
+    {q:'绩效评估里的「光环效应」与双系统：如何用结构化打分规避？', meta:['热度 4.7k','关联：双系统模型']},
+    {q:'管理者如何识别团队决策中的「过度自信」与「框架偏差」？', meta:['热度 3.9k','关联：框架效应']}
+  ]},
+  ux:{name:'产品 / UX', topics:[
+    {q:'峰终定律指导下的体验设计：资源该投在哪？', meta:['热度 4.4k','关联：峰终定律']},
+    {q:'如何用「默认选项」和框架设计引导用户行为（助推）？', meta:['热度 3.8k','关联：框架效应','关联：助推']}
+  ]},
+  psy:{name:'认知心理学', topics:[
+    {q:'双系统模型与「控制错觉」：系统 1 的自动化有边界吗？', meta:['热度 6.1k','关联：双系统模型']},
+    {q:'启发式与偏差研究 50 年：哪些结论经受住了可重复性检验？', meta:['热度 5.3k','关联：启发式与偏差']}
+  ]}
+};
+
+/* ================= 问答评测数据 ================= */
+const QUIZ = {
+  intro:{ai:'欢迎开始掌握度评测 👋\n\n我会围绕《思考，快与慢》的核心理论，由浅入深地向你提问。\n\n你可以直接用文字回答，也可以用下方「示例回答 / 模拟答错」快速体验两条分支。\n\n准备好了吗？我先问你第一个问题 👇'},
+  q1:{
+    theory:'sys', label:'回忆层 · 双系统模型',
+    q:'系统 1 和系统 2 的核心区别是什么？请用你自己的话解释。',
+    keywords:['快','慢','自动','直觉','无意识','不费力','理性','分析','注意力','费力'],
+    feedback:{
+      mastered:'答得很好！你抓住了「快/自动/无意识」与「慢/理性/费力」的核心对立，也点出了系统 2 需要注意力预算。',
+      partial:'基本方向对了，但还不够完整——漏掉了「系统 1 自动/无意识、系统 2 需要注意力/费力」这一层关键区别。',
+      failed:'这里理解还不到位。核心是：系统 1 快、自动、无意识、不费力；系统 2 慢、理性、需要注意力、费力。我们后面会帮你补上。'
+    }
+  },
+  q2:{
+    theory:'loss', label:'理解层 · 损失厌恶',
+    q:'为什么「损失厌恶」会让投资者做出非理性决策？请结合机制说明。',
+    keywords:['损失','厌恶','规避','失去','获得','收益','不对称','2倍','恐惧','死扛','止损','痛苦'],
+    feedback:{
+      mastered:'很到位！你点出了「损失的心理权重大于等额收益（约 2 倍）」这个关键机制，也理解了它导致的「卖赢持亏」。',
+      partial:'机制理解了一半。关键在「损失带来的痛苦约为同等收益的 2 倍」，所以投资者会回避「确认损失」。',
+      failed:'还没抓住机制。损失厌恶 = 损失的心理痛苦约为同等收益的 2 倍，因此人会死扛亏损、急于止盈来回避确认损失。'
+    }
+  },
+  q3:{
+    theory:'anchor', label:'迁移层 · 锚定效应',
+    q:'假如你是 HR，在面试中如何规避「锚定效应」带来的偏差？请给出具体做法。',
+    keywords:['结构化','标准','评分','先','信息','隔离','客观','独立','多个','打分','第一印象','避免','评分表','依据'],
+    feedback:{
+      mastered:'非常棒，这是「迁移」能力！结构化面试、评分表先行、隔离无关信息、独立打分，都是对抗锚定的标准做法。',
+      partial:'有一些意识，但不够具体。核心做法：用结构化评分表 + 评分标准先行 + 信息隔离（先打分再讨论）。',
+      failed:'这里建议结合工作场景再想想。规避锚定要靠「结构化」：先定评分标准、用评分表逐项打分、隔离无关信息、避免被第一印象带着走。'
+    }
+  },
+  q1b:{
+    theory:'sys', label:'换问法 · 双系统模型',
+    q:'换个角度：请举一个你生活/工作中的例子，说明系统 1 和系统 2 是如何协同工作的？',
+    keywords:['快','慢','自动','直觉','无意识','不费力','理性','分析','注意力','费力','例子','协同','反应','思考'],
+    feedback:{
+      mastered:'例子很好，说明你真的理解了双系统的分工与协同——系统 1 先给直觉，系统 2 再校验。',
+      partial:'例子有了，但还没讲清「协同」：系统 1 自动给答案，系统 2 在有冲突/需要时介入校验。',
+      failed:'还是建议先读一下原文第 1 章，把「系统 1 自动 vs 系统 2 费力校验」的分工彻底理清。'
+    }
+  },
+  q2b:{
+    theory:'loss', label:'换问法 · 损失厌恶',
+    q:'换一种问法：为什么人们面对「确定损失」时，反而更愿意冒险？这和损失厌恶有什么关系？',
+    keywords:['损失','厌恶','冒险','确定','赌','挽回','避免','接受','亏损','翻本','痛苦','规避'],
+    feedback:{
+      mastered:'正确！面对「确定的损失」，人为了避免 100% 的损失而宁愿冒险搏一把，这是损失厌恶在亏损区间的体现。',
+      partial:'方向对了一半：因为人厌恶「确定的损失」，宁可用冒险去赌一个「不损失」的可能。',
+      failed:'这里需要回到损失厌恶的价值函数：在亏损区间人更愿意冒险来回避确定的损失，这是「损失厌恶」的直接表现。'
+    }
+  },
+  q3b:{
+    theory:'anchor', label:'换问法 · 锚定效应',
+    q:'再考一次：为什么「先看报价」会影响你后续的谈判预期？请用锚定效应解释。',
+    keywords:['锚','锚定','初始','参考','调整','不足','影响','报价','先','基准','预期','起点'],
+    feedback:{
+      mastered:'对，这就是「锚定 + 调整不足」：先看到的报价成为锚点，后续判断围绕它做不充分的调整。',
+      partial:'接近了，但关键机制是「调整不足」——锚点一旦定下，人们从它出发调整得远远不够。',
+      failed:'建议读一下原文第 11 章：锚定 = 初始值成为参考点 + 调整不足，导致判断被锚点带偏。'
+    }
+  }
+};
+
+const QUOTES = {
+  sys:{src:'第 1 章 · 一张愤怒的脸和一条乘法题', text:'系统 1 的运行是无意识且快速的，不怎么费脑力，没有感觉，完全处于自主控制状态。系统 2 将注意力转移到需要费脑力的活动上来，例如复杂的运算。'},
+  loss:{src:'第 28 章 · 框架与参照', text:'损失厌恶：损失与等额的收益相比，损失给人带来的心理影响更大。在大多数情况下，损失的痛苦大约是同等收益快乐的 2 倍。'},
+  anchor:{src:'第 11 章 · 锚定效应', text:'锚定效应：人们在不确定的情境下，会依赖一个初始值（锚点）进行估计，随后所做的调整往往不够充分，导致最终判断被锚点显著影响。'}
+};
+
+/* ================= 状态 ================= */
+let currentCase = 'book';
+let caseFilter = 'all';   // 按理论筛选：'all' 或理论 id
+let caseBrief = false;    // 精简模式：只留场景与结果，便于快速扫读
+let currentCircle = 'econ';
+let mastery = {
+  sys:{score:0, state:'pending', fail:0},
+  loss:{score:0, state:'pending', fail:0},
+  anchor:{score:0, state:'pending', fail:0}
+};
+let quizPhase = 'idle';   // idle | asking | answered
+let quizQueue = [];       // 待问问题队列
+let phase = 'round1';     // round1 | review | done
+let reviewList = [];      // 需复查的理论列表
+let justRead = false;     // 读完原文后再考的标志
+let started = false;      // 是否已开始评测
+let shelved = false;      // 当前精读的书是否已放入书架
+let shelvedAsFinished = false;  // 入架时是否已评测完成（决定回退时是否重置评测）
+const READING_BOOK = {title:'思考，快与慢', author:'丹尼尔·卡尼曼 · 认知心理学', authorShort:'丹尼尔·卡尼曼',
+                      gradient:'linear-gradient(150deg,#C0603C,#8F3F26)', initial:'思'};
+
+/* ================= 渲染：本书概况 ================= */
+function renderOverview(){
+  const wrap = document.getElementById('ovRoot');
+  if(!wrap) return;
+  const o = BOOK_OVERVIEW;
+  wrap.innerHTML = `
+  <div class="ov-wrap">
+    <div class="ov-hero">
+      <div class="ov-cover" style="background:${READING_BOOK.gradient}">${READING_BOOK.initial}</div>
+      <div class="ov-hero-main">
+        <div class="ov-kicker">Book Overview</div>
+        <div class="ov-title">${o.title}</div>
+        <div class="ov-author">${o.author}</div>
+        <div class="ov-lead">${o.lead}</div>
+        <div class="ov-meta">
+          ${o.meta.map(m=>`<span class="ov-chip">${m}</span>`).join('')}
+          ${o.warn.map(m=>`<span class="ov-chip warn">${m}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="ov-quote">
+      <div class="q">${o.quote.t}</div>
+      <div class="s">${o.quote.s}</div>
+    </div>
+
+    <div class="ov-sec">
+      <h3>这本书是怎么来的</h3>
+      <div class="ov-body">${o.origin.map(p=>`<p>${p}</p>`).join('')}</div>
+    </div>
+
+    <div class="ov-sec">
+      <h3>全书怎么组织</h3>
+      <div class="ov-parts">
+        ${o.parts.map(p=>`
+          <div class="ov-part">
+            <div class="no">${p.n}</div>
+            <div class="txt">
+              <div class="nm">${p.name}<span class="ch">${p.ch}</span></div>
+              <div class="ds">${p.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="ov-cta">
+        <button onclick="switchSub('map')">看全书思维导图 →</button>
+        <button class="ghost" onclick="switchSub('theory')">直接看核心理论</button>
+      </div>
+    </div>
+
+    <div class="ov-sec">
+      <h3>你能收获什么</h3>
+      <div class="ov-grid2">
+        ${o.gains.map((g,i)=>`
+          <div class="ov-gain" data-n="${['一','二','三','四'][i]||i+1}">
+            <div class="gi">${g.gi}</div>
+            <h4>${g.t}</h4>
+            <p>${g.d}</p>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="ov-sec">
+      <h3>建议怎么读</h3>
+      <div class="ov-steps">
+        ${o.steps.map((s,i)=>`
+          <div class="ov-step">
+            <div class="ov-sn">${i+1}</div>
+            <h4>${s.t}</h4>
+            <p>${s.d}</p>
+          </div>`).join('')}
+      </div>
+      <div class="ov-cta">
+        <button onclick="switchSub('map')">第 1 步：看全书思维导图</button>
+        <button class="ghost" onclick="gotoQuiz()">第 4 步：去掌握度评测</button>
+      </div>
+    </div>
+
+    <div class="ov-note">${o.note}</div>
+  </div>`;
+}
+
+/* ================= 渲染：理论图谱 ================= */
+function renderGraph(){
+  const pairs = [
+    ['双系统模型','双加工理论\nStanovich & West'],
+    ['前景理论','期望效用理论\nv.Neumann'],
+    ['损失厌恶','禀赋效应\nRichard Thaler'],
+    ['锚定效应','启发式与偏差\nTversky & Kahneman'],
+    ['峰终定律','体验/记忆自我\nKahneman'],
+    ['框架效应','助推 (Nudge)\nThaler & Sunstein']
+  ];
+  const links = document.getElementById('graph-links');
+  const nodes = document.getElementById('graph-nodes');
+  pairs.forEach((p,i)=>{
+    const y = 32 + i*72;
+    // 连线
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','258'); line.setAttribute('y1',y+24);
+    line.setAttribute('x2','480'); line.setAttribute('y2',y+24);
+    line.setAttribute('marker-end','url(#arrow)');
+    links.appendChild(line);
+    // 左节点（核心理论）
+    const lr = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    lr.setAttribute('x','8'); lr.setAttribute('y',y); lr.setAttribute('width','250'); lr.setAttribute('height','48');
+    lr.setAttribute('rx','10'); lr.setAttribute('fill','#C0603C');
+    nodes.appendChild(lr);
+    const lt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lt.setAttribute('x','133'); lt.setAttribute('y',y+30); lt.setAttribute('text-anchor','middle');
+    lt.setAttribute('fill','#fff'); lt.setAttribute('font-size','14'); lt.setAttribute('font-weight','700');
+    lt.textContent = p[0];
+    nodes.appendChild(lt);
+    // 右节点（学术理论）
+    const rr = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rr.setAttribute('x','480'); rr.setAttribute('y',y); rr.setAttribute('width','272'); rr.setAttribute('height','48');
+    rr.setAttribute('rx','10'); rr.setAttribute('fill','var(--pine-bg)'); rr.setAttribute('stroke','#A9C4BA');
+    nodes.appendChild(rr);
+    const rt1 = document.createElementNS('http://www.w3.org/2000/svg','text');
+    rt1.setAttribute('x','616'); rt1.setAttribute('y',y+21); rt1.setAttribute('text-anchor','middle');
+    rt1.setAttribute('fill','#2F5D50'); rt1.setAttribute('font-size','13'); rt1.setAttribute('font-weight','700');
+    rt1.textContent = p[1].split('\n')[0];
+    nodes.appendChild(rt1);
+    const rt2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+    rt2.setAttribute('x','616'); rt2.setAttribute('y',y+38); rt2.setAttribute('text-anchor','middle');
+    rt2.setAttribute('fill','var(--ink-3)'); rt2.setAttribute('font-size','11');
+    rt2.textContent = p[1].split('\n')[1] || '';
+    nodes.appendChild(rt2);
+  });
+}
+
+/* ================= 渲染：全书思维导图 ================= */
+/* 结构按原书「五大部分」组织，而不是按 AI 抽取的理论列表 —— 这样才看得出某个理论在全书中的位置。
+   二级 = 核心理论（左侧色条为掌握状态），三级 = 关联理论（标注来源：书中提及 / AI 补充）。 */
+const BOOK_MAP = {
+  title:'思考，快与慢',
+  meta:'卡尼曼 · 5 大部分 · 6 个核心理论',
+  children:[
+    {id:'p1', title:'两个系统', meta:'第 1 部分 · 1–9 章', children:[
+      {id:'sys', theory:'sys', title:'双系统模型', meta:'第 1 章', children:[
+        {title:'双加工理论', meta:'Stanovich & West', src:'book'},
+        {title:'认知负荷理论', meta:'John Sweller', src:'ai'}
+      ]}
+    ]},
+    {id:'p2', title:'启发式与偏差', meta:'第 2 部分 · 10–18 章', children:[
+      {id:'anchor', theory:'anchor', title:'锚定效应', meta:'第 11 章', children:[
+        {title:'启发式与偏差', meta:'Tversky & Kahneman', src:'book'},
+        {title:'调整不足', meta:'Tversky & Kahneman', src:'book'}
+      ]}
+    ]},
+    {id:'p3', title:'过度自信', meta:'第 3 部分 · 19–24 章', children:[
+      {id:'na1', title:'后见之明 / 有效性错觉', meta:'本书议题 · 原型未展开', muted:true, children:[]}
+    ]},
+    {id:'p4', title:'选择与风险', meta:'第 4 部分 · 25–34 章', children:[
+      {id:'prospect', theory:'prospect', title:'前景理论', meta:'第 26 章 · 诺奖核心', children:[
+        {title:'期望效用理论', meta:'v.Neumann & Morgenstern', src:'book'},
+        {title:'参照点依赖', meta:'Kahneman & Tversky', src:'book'}
+      ]},
+      {id:'loss', theory:'loss', title:'损失厌恶', meta:'第 28 章', children:[
+        {title:'禀赋效应', meta:'Richard Thaler', src:'book'},
+        {title:'处置效应', meta:'Shefrin & Statman', src:'ai'}
+      ]},
+      {id:'frame', theory:'frame', title:'框架效应', meta:'第 34 章', children:[
+        {title:'助推（Nudge）', meta:'Thaler & Sunstein', src:'book'},
+        {title:'描述不变性', meta:'被违背的理性假设', src:'book'}
+      ]}
+    ]},
+    {id:'p5', title:'两个自我', meta:'第 5 部分 · 35–38 章', children:[
+      {id:'peakend', theory:'peakend', title:'峰终定律', meta:'第 35 章', children:[
+        {title:'体验自我 / 记忆自我', meta:'Kahneman', src:'book'},
+        {title:'时间忽略', meta:'Redelmeier & Kahneman', src:'book'}
+      ]}
+    ]}
+  ]
+};
+/* 默认折叠第三层（关联理论）：首屏只给「全书骨架 + 掌握度」，一次铺开三层会让画布宽到看不清字。
+   想看某个理论的学术脉络，点节点上的 ＋ 展开即可。 */
+(function collapseThirdLevel(){
+  BOOK_MAP.children.forEach(p => {
+    (p.children || []).forEach(t => { if((t.children || []).length) t.collapsed = true; });
+  });
+})();
+
+const NS = 'http://www.w3.org/2000/svg';
+let mapLayout = 'mind';          // mind = 左右平衡放射；tree = 左→右逻辑图
+let mapView = {k:1, x:0, y:0};
+let mapDragged = false;
+const MM_PAD = {x:13, y:10};
+const MM_VGAP = 14;
+const MM_STYLE = [
+  {maxW:236, fs:16, lh:22, bar:0},   // 0 根节点
+  {maxW:218, fs:13.5, lh:18, bar:0}, // 1 部分
+  {maxW:206, fs:13, lh:18, bar:6},   // 2 核心理论
+  {maxW:196, fs:12, lh:17, bar:5}    // 3 关联理论
+];
+
+const _mtx = document.createElement('canvas').getContext('2d');
+function mmTextW(s, fs, bold){
+  _mtx.font = (bold ? '600 ' : '400 ') + fs + 'px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif';
+  return _mtx.measureText(s).width;
+}
+function mmWrap(s, maxW, fs){
+  const out = []; let cur = '';
+  for(const ch of s){
+    if(cur && mmTextW(cur + ch, fs, true) > maxW){ out.push(cur); cur = (ch === ' ') ? '' : ch; }
+    else cur += ch;
+    if(out.length === 2) break;
+  }
+  if(out.length < 2 && cur) out.push(cur);
+  return out.length ? out : [s];
+}
+function mmEllipsis(s, maxW, fs){
+  if(!s) return '';
+  if(mmTextW(s, fs, false) <= maxW) return s;
+  let out = s;
+  while(out && mmTextW(out + '…', fs, false) > maxW) out = out.slice(0, -1);
+  return out + '…';
+}
+function mmStateColor(state){
+  return state === 'mastered' ? 'var(--green)'
+       : state === 'failed'   ? 'var(--red)'
+       : state === 'partial'  ? 'var(--yellow)'
+       : 'var(--line-2)';
+}
+function mmTheoryState(id){
+  const m = mastery[id];
+  if(!m || m.state === 'pending') return 'pending';
+  return m.state;
+}
+
+/* 1) 量尺寸：按文字实际宽度决定节点大小（中文长标题不会溢出） */
+function mmMeasure(node, level){
+  node.level = level;
+  const st = MM_STYLE[Math.min(level, 3)];
+  const inner = st.maxW - MM_PAD.x * 2 - st.bar;
+  node.titleLines = mmWrap(node.title, inner, st.fs);
+  node.metaText = mmEllipsis(node.meta, inner, 11);
+  node.fs = st.fs; node.lh = st.lh; node.bar = st.bar;
+  const tw = Math.max.apply(null, node.titleLines.map(l => mmTextW(l, st.fs, true)));
+  const mw = node.metaText ? mmTextW(node.metaText, 11, false) : 0;
+  node.w = Math.min(st.maxW, Math.max(st.maxW * 0.6, Math.max(tw, mw) + MM_PAD.x * 2 + st.bar));
+  node.h = MM_PAD.y * 2 + node.titleLines.length * st.lh + (node.metaText ? 15 : 0);
+  (node.children || []).forEach(c => mmMeasure(c, level + 1));
+}
+/* 2) 量子树高度（自底向上） */
+function mmSubH(node){
+  const kids = node.collapsed ? [] : (node.children || []);
+  if(!kids.length) return node.h;
+  let t = 0;
+  kids.forEach((c, i) => { t += mmSubH(c); if(i) t += MM_VGAP; });
+  return Math.max(node.h, t);
+}
+/* 3) 摆位置（父节点垂直居中于子节点） */
+function mmPlace(node, yTop){
+  node.y = yTop + mmSubH(node) / 2;
+  const kids = node.collapsed ? [] : (node.children || []);
+  if(!kids.length) return;
+  let total = 0;
+  kids.forEach((c, i) => { total += mmSubH(c); if(i) total += MM_VGAP; });
+  let y = node.y - total / 2;
+  kids.forEach(c => { const h = mmSubH(c); mmPlace(c, y); y += h + MM_VGAP; });
+}
+function mmLayout(){
+  mmMeasure(BOOK_MAP, 0);
+  // 每层节点到根中心的水平距离（同层左对齐，图更整齐）
+  const w = [0, 0, 0, 0];
+  (function walk(n, l){ w[l] = Math.max(w[l], n.w); (n.children || []).forEach(c => walk(c, l + 1)); })(BOOK_MAP, 0);
+  const xs = [0];
+  xs[1] = w[0] / 2 + 64 + w[1] / 2;
+  xs[2] = xs[1] + w[1] / 2 + 48 + w[2] / 2;
+  xs[3] = xs[2] + w[2] / 2 + 42 + w[3] / 2;
+  const kids = BOOK_MAP.children;
+  if(mapLayout === 'mind'){
+    kids.forEach((c, i) => { c.dir = (i % 2 === 0) ? -1 : 1; });   // 左右交替，宽屏利用率最高
+  }else{
+    kids.forEach(c => { c.dir = 1; });
+  }
+  BOOK_MAP.dir = 1; BOOK_MAP.x = 0; BOOK_MAP.y = 0;
+  const stack = (list, startY) => { let y = startY; list.forEach(c => { const h = mmSubH(c); mmPlace(c, y); y += h + MM_VGAP; }); };
+  const totalOf = list => list.reduce((s, c, i) => s + mmSubH(c) + (i ? MM_VGAP : 0), 0);
+  if(mapLayout === 'mind'){
+    const left = kids.filter(c => c.dir === -1), right = kids.filter(c => c.dir === 1);
+    stack(left, -totalOf(left) / 2);
+    stack(right, -totalOf(right) / 2);
+  }else{
+    stack(kids, -totalOf(kids) / 2);
+  }
+  // 子节点继承父节点方向；x 按层级固定
+  (function inherit(n){ (n.children || []).forEach(c => { if(n.level >= 1) c.dir = n.dir; inherit(c); }); })(BOOK_MAP);
+  (function setX(n, l){ n.x = (l === 0) ? 0 : n.dir * xs[l]; (n.children || []).forEach(c => setX(c, l + 1)); })(BOOK_MAP, 0);
+}
+
+function mmVisible(node, out){
+  out = out || [];
+  out.push(node);
+  if(!node.collapsed) (node.children || []).forEach(c => mmVisible(c, out));
+  return out;
+}
+/* 连线：由粗到细（思维导图基本法则），一级用墨绿（结构色） */
+function mmDrawLink(box, from, to){
+  const dir = to.dir;
+  const sx = from.x + dir * (from.w / 2), sy = from.y;
+  const ex = to.x - dir * (to.w / 2), ey = to.y;
+  const mx = (sx + ex) / 2;
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M' + sx + ',' + sy + ' C' + mx + ',' + sy + ' ' + mx + ',' + ey + ' ' + ex + ',' + ey);
+  p.setAttribute('fill', 'none');
+  p.setAttribute('stroke', to.level === 1 ? 'var(--pine)' : (to.level === 2 ? 'var(--line-2)' : 'var(--line)'));
+  p.setAttribute('stroke-width', to.level === 1 ? 2.4 : (to.level === 2 ? 1.6 : 1.2));
+  p.setAttribute('stroke-linecap', 'round');
+  box.appendChild(p);
+}
+function mmDrawNode(box, n){
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', 'translate(' + (n.x - n.w / 2) + ',' + (n.y - n.h / 2) + ')');
+  const cls = ['mm-node'];
+  if(n.muted) cls.push('muted');
+  const clickable = (n.level === 1) || (n.level === 2 && n.theory && !n.muted);
+  if(clickable) cls.push('clickable');
+  g.setAttribute('class', cls.join(' '));
+
+  const r = document.createElementNS(NS, 'rect');
+  r.setAttribute('class', 'mm-box');
+  r.setAttribute('width', n.w); r.setAttribute('height', n.h);
+  r.setAttribute('rx', n.level === 0 ? 14 : 10);
+  if(n.level === 0){ r.setAttribute('fill', 'url(#mmRootGrad)'); r.setAttribute('stroke', 'none'); }
+  else if(n.level === 1){ r.setAttribute('fill', 'var(--pine-bg)'); r.setAttribute('stroke', '#A9C4BA'); }
+  g.appendChild(r);
+
+  // 左侧竖条编码：二级 = 掌握状态（语义色），三级 = 来源（墨绿=书中提及 / 暗金=AI 补充）
+  let barFill = null, barW = 0;
+  if(n.level === 2){
+    barFill = mmStateColor(mmTheoryState(n.theory));
+    barW = 5;
+  }else if(n.level === 3 && n.src){
+    barFill = n.src === 'ai' ? 'var(--gold)' : 'var(--pine)';
+    barW = 4;
+  }
+  if(barFill){
+    const bar = document.createElementNS(NS, 'rect');
+    bar.setAttribute('x', 2); bar.setAttribute('y', 3);
+    bar.setAttribute('width', barW); bar.setAttribute('height', Math.max(6, n.h - 6));
+    bar.setAttribute('rx', barW / 2);
+    bar.setAttribute('fill', barFill);
+    g.appendChild(bar);
+  }
+  // 二级再加右上角状态点（标题都短，不会压到文字）
+  if(n.level === 2){
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', n.w - 11); dot.setAttribute('cy', 13); dot.setAttribute('r', 4);
+    dot.setAttribute('fill', mmStateColor(mmTheoryState(n.theory)));
+    g.appendChild(dot);
+  }
+
+  const tx = MM_PAD.x + n.bar;
+  const ty = MM_PAD.y;
+  const centered = (n.level === 0);
+  n.titleLines.forEach((line, i) => {
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', centered ? n.w / 2 : tx);
+    t.setAttribute('y', ty + n.fs * 0.8 + i * n.lh);
+    t.setAttribute('text-anchor', centered ? 'middle' : 'start');
+    t.setAttribute('class', 'mm-title');
+    t.setAttribute('font-size', n.fs);
+    if(centered){ t.setAttribute('fill', '#fff'); t.setAttribute('font-weight', '700'); }
+    else if(n.level === 1){ t.setAttribute('fill', 'var(--pine-2)'); }
+    t.textContent = line;
+    g.appendChild(t);
+  });
+  if(n.metaText){
+    const m = document.createElementNS(NS, 'text');
+    m.setAttribute('x', centered ? n.w / 2 : tx);
+    m.setAttribute('y', ty + n.titleLines.length * n.lh + 11);
+    m.setAttribute('text-anchor', centered ? 'middle' : 'start');
+    m.setAttribute('class', 'mm-meta');
+    m.setAttribute('font-size', 11);
+    if(centered) m.setAttribute('fill', 'rgba(255,255,255,.82)');
+    m.textContent = n.metaText;
+    g.appendChild(m);
+  }
+
+  // 折叠按钮（放在朝子节点的一侧）
+  if((n.children || []).length && n.level >= 1){
+    const tg = document.createElementNS(NS, 'g');
+    tg.setAttribute('class', 'mm-toggle');
+    const cx = (n.dir === -1) ? -11 : n.w + 11;
+    const cy = n.h / 2;
+    // 透明热区：r=8 的圆太难点，用户一偏就变成"拖画布"
+    const hit = document.createElementNS(NS, 'circle');
+    hit.setAttribute('cx', cx); hit.setAttribute('cy', cy); hit.setAttribute('r', 13);
+    hit.setAttribute('pointer-events', 'all');
+    hit.style.fill = 'transparent'; hit.style.stroke = 'none';
+    tg.appendChild(hit);
+    const cir = document.createElementNS(NS, 'circle');
+    cir.setAttribute('cx', cx); cir.setAttribute('cy', cy); cir.setAttribute('r', 8.5);
+    tg.appendChild(cir);
+    const tt = document.createElementNS(NS, 'text');
+    tt.setAttribute('x', cx); tt.setAttribute('y', cy + 4);
+    tt.textContent = n.collapsed ? '+' : '−';
+    tg.appendChild(tt);
+    tg.style.cursor = 'pointer';
+    // 按在折叠钮上不要启动画布拖动，否则手抖 3px 就变成拖图、点击还会被 mapDragged 吞掉
+    tg.addEventListener('mousedown', ev => ev.stopPropagation());
+    tg.addEventListener('click', ev => { ev.stopPropagation(); mmToggle(n); });
+    g.appendChild(tg);
+  }
+
+  if(clickable){
+    g.addEventListener('click', () => {
+      if(mapDragged) return;
+      if(n.level === 1){ mmToggle(n); }
+      else focusTheory(n.theory);
+    });
+  }
+  box.appendChild(g);
+}
+
+let mapReady = false;    // 是否已渲染过
+let mapFitted = false;   // 是否已用「画布真实可见尺寸」适应过窗口（面板隐藏时 clientWidth 为 0，那次 fit 不算数）
+/* opts.keepView : 保留用户当前的缩放与平移，不做「适应窗口」
+   opts.anchor   : {node,x,y} 重排后把该节点的位移补偿回 viewport，
+                   让它在屏幕上纹丝不动 —— 展开/折叠才不会「跳回」 */
+function renderMindMap(opts){
+  opts = opts || {};
+  const links = document.getElementById('mapLinks');
+  const nodes = document.getElementById('mapNodes');
+  if(!links || !nodes) return;
+  mmLayout();
+  links.innerHTML = ''; nodes.innerHTML = '';
+  const all = mmVisible(BOOK_MAP);
+  all.forEach(n => { if(!n.collapsed) (n.children || []).forEach(c => mmDrawLink(links, n, c)); });
+  all.forEach(n => mmDrawNode(nodes, n));
+  if(opts.keepView && mapReady){
+    if(opts.anchor){
+      const n = opts.anchor.node;
+      mapView.x += (opts.anchor.x - n.x) * mapView.k;
+      mapView.y += (opts.anchor.y - n.y) * mapView.k;
+      if(opts.reveal) mmEnsureInView(n);   // 只有展开才需要纠偏；折叠是内容变少，不必动视图
+    }
+    applyMapView(true);
+  }else{
+    fitMap(true);
+    mapReady = true;
+  }
+}
+/* 折叠/展开：以被点击的节点为锚，原地展开 */
+function mmToggle(n){
+  if(mapDragged) return;
+  n.collapsed = !n.collapsed;
+  renderMindMap({keepView:true, reveal:!n.collapsed, anchor:{node:n, x:n.x, y:n.y}});
+}
+/* 兜底：展开出来的子树若跑到画布外，做最小平移（放不下再按需缩小），
+   只动被操作的那一支，不惊动用户自己拖好的其余视图 */
+function mmEnsureInView(n){
+  if(!n) return;
+  const cv = document.getElementById('mapCanvas');
+  if(!cv) return;
+  const cw = cv.clientWidth || 900, ch = cv.clientHeight || 560, pad = 26;
+  const box = () => {
+    const a = {minX:1e9, maxX:-1e9, minY:1e9, maxY:-1e9};
+    (function walk(m){
+      const sx = mapView.x + m.x * mapView.k, sy = mapView.y + m.y * mapView.k;
+      const hw = m.w * mapView.k / 2, hh = m.h * mapView.k / 2;
+      a.minX = Math.min(a.minX, sx - hw); a.maxX = Math.max(a.maxX, sx + hw);
+      a.minY = Math.min(a.minY, sy - hh); a.maxY = Math.max(a.maxY, sy + hh);
+      if(!m.collapsed) (m.children || []).forEach(walk);
+    })(n);
+    return a;
+  };
+  let b = box();
+  const need = Math.min((cw - 2 * pad) / (b.maxX - b.minX), (ch - 2 * pad) / (b.maxY - b.minY));
+  if(need < 1){
+    const nk = Math.max(0.45, mapView.k * need);
+    if(nk < mapView.k){
+      const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+      mapView.x = cx - (cx - mapView.x) * (nk / mapView.k);
+      mapView.y = cy - (cy - mapView.y) * (nk / mapView.k);
+      mapView.k = nk;
+      b = box();
+    }
+  }
+  let dx = 0, dy = 0;
+  if(b.minX < pad) dx = pad - b.minX;
+  else if(b.maxX > cw - pad) dx = (cw - pad) - b.maxX;
+  if(b.minY < pad) dy = pad - b.minY;
+  else if(b.maxY > ch - pad) dy = (ch - pad) - b.maxY;
+  // 单次位移设上限：宁可多带一点，也不要整屏猛甩（配合 .24s 过渡，观感是"顺带过去"）
+  const cap = Math.min(cw, ch) * 0.45;
+  if(dx || dy){
+    const len = Math.hypot(dx, dy);
+    if(len > cap){ dx = dx * cap / len; dy = dy * cap / len; }
+    mapView.x += dx; mapView.y += dy;
+  }
+}
+function applyMapView(anim){
+  const vp = document.getElementById('mapViewport');
+  if(!vp) return;
+  if(anim) vp.classList.add('anim');
+  vp.setAttribute('transform', 'translate(' + mapView.x + ',' + mapView.y + ') scale(' + mapView.k + ')');
+  if(anim) setTimeout(() => vp.classList.remove('anim'), 280);
+}
+function mmBBox(){
+  const all = mmVisible(BOOK_MAP);
+  let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+  all.forEach(n => {
+    minX = Math.min(minX, n.x - n.w / 2); maxX = Math.max(maxX, n.x + n.w / 2);
+    minY = Math.min(minY, n.y - n.h / 2); maxY = Math.max(maxY, n.y + n.h / 2);
+  });
+  return {w:maxX - minX, h:maxY - minY, cx:(minX + maxX) / 2, cy:(minY + maxY) / 2};
+}
+function fitMap(anim){
+  const cv = document.getElementById('mapCanvas');
+  if(!cv) return;
+  const cw = cv.clientWidth || 900, ch = cv.clientHeight || 560;
+  const b = mmBBox();
+  if(!b.w || !b.h) return;
+  mapView.k = Math.max(0.3, Math.min((cw - 72) / b.w, (ch - 72) / b.h, 1));
+  mapView.x = cw / 2 - b.cx * mapView.k;
+  mapView.y = ch / 2 - b.cy * mapView.k;
+  applyMapView(anim);
+}
+function zoomMap(f, anim){
+  const cv = document.getElementById('mapCanvas');
+  const cw = (cv && cv.clientWidth) || 900, ch = (cv && cv.clientHeight) || 560;
+  const nk = Math.min(2.4, Math.max(0.3, mapView.k * f));
+  mapView.x = cw / 2 - (cw / 2 - mapView.x) * (nk / mapView.k);
+  mapView.y = ch / 2 - (ch / 2 - mapView.y) * (nk / mapView.k);
+  mapView.k = nk;
+  applyMapView(anim);
+}
+function setMapLayout(mode){
+  mapLayout = mode;
+  const a = document.getElementById('btnLayoutMind'), b = document.getElementById('btnLayoutTree');
+  if(a) a.classList.toggle('active', mode === 'mind');
+  if(b) b.classList.toggle('active', mode === 'tree');
+  renderMindMap();
+}
+function toggleAllMap(){
+  const kids = BOOK_MAP.children;
+  const anyOpen = kids.some(k => !k.collapsed);
+  kids.forEach(k => { if((k.children || []).length) k.collapsed = anyOpen; });
+  const btn = document.getElementById('btnFoldAll');
+  if(btn) btn.textContent = anyOpen ? '展开全部' : '折叠全部';
+  renderMindMap();
+}
+function focusTheory(id){
+  if(!id) return;
+  switchSub('theory');
+  const card = document.getElementById('tc-' + id);
+  if(!card){ toast('该理论暂无详解'); return; }
+  card.classList.add('open');
+  document.querySelectorAll('.theory-card').forEach(c => c.classList.remove('flash'));
+  if(card.scrollIntoView) card.scrollIntoView({behavior:'smooth', block:'center'});
+  card.classList.add('flash');
+  setTimeout(() => card.classList.remove('flash'), 1500);
+}
+
+/* 画布：拖动平移 + 滚轮缩放 */
+(function initMapPan(){
+  const cv = document.getElementById('mapCanvas');
+  if(!cv) return;
+  let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+  cv.addEventListener('mousedown', e => {
+    dragging = true; mapDragged = false;
+    sx = e.clientX; sy = e.clientY; ox = mapView.x; oy = mapView.y;
+    cv.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if(Math.abs(dx) > 5 || Math.abs(dy) > 5) mapDragged = true;
+    mapView.x = ox + dx; mapView.y = oy + dy;
+    applyMapView();
+  });
+  window.addEventListener('mouseup', () => {
+    if(!dragging) return;
+    dragging = false; cv.classList.remove('dragging');
+    setTimeout(() => { mapDragged = false; }, 0);
+  });
+  cv.addEventListener('wheel', e => { e.preventDefault(); zoomMap(e.deltaY < 0 ? 1.12 : 1 / 1.12); }, {passive:false});
+  window.addEventListener('resize', () => { if(!document.getElementById('sub-map').classList.contains('hidden')) fitMap(); });
+})();
+
+/* ================= 渲染：核心理论列表 ================= */
+function renderTheories(){
+  const wrap = document.getElementById('theoryList');
+  wrap.innerHTML = THEORIES.map(t=>`
+    <div class="theory-card" id="tc-${t.id}">
+      <div class="theory-head" onclick="toggleTheory('${t.id}')">
+        <div class="theory-idx">${t.idx}</div>
+        <div>
+          <div class="t-name">${t.name}</div>
+          <div class="t-sub">${t.sub} · ${t.src}</div>
+        </div>
+        <div class="arrow">▾</div>
+      </div>
+      <div class="theory-body">
+        <div class="t-def">${t.def}</div>
+        <div class="sub-block">
+          <h4><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h.01"/><path d="M9 13h.01"/><path d="M15 9h.01"/><path d="M15 13h.01"/></svg></span>学术界的评价</h4>
+          <div class="eval-box">
+            <div class="eval-item"><b>影响力</b>　${t.eval.impact}</div>
+            <div class="eval-item"><b>争议</b>　${t.eval.debate}</div>
+          </div>
+        </div>
+        <div class="sub-block">
+          <h4><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>关联的学术界认可理论</h4>
+          ${t.related.map(r=>`
+            <div class="related-item ${r.source==='ai'?'is-ai':''}">
+              <div>
+                <div class="rel-name">${r.name}</div>
+                <div class="rel-meta">提出者：${r.meta}${r.year ? ' · '+r.year+' 年' : ''}</div>
+                <div class="rel-link">${r.link}</div>
+                <div class="rel-def">${r.def}</div>
+                ${r.source==='book'
+                  ? `<span class="src-tag book" onclick="goToLogic()" title="点击查看验证逻辑链"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v7"/><path d="M9 9h6"/></svg></span>书中提及 · ${r.pos}</span>`
+                  : `<span class="src-tag ai" title="书中未直接提及此术语，为 AI 补充的学术脉络"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>AI 关联 · 书中未直接提及</span>`}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ================= 渲染：逻辑链 ================= */
+function renderLogic(){
+  const wrap = document.getElementById('logicContainer');
+  const order = ['sys','prospect','loss','anchor','peakend','frame'];
+  const labels = {'sys':'双系统模型','prospect':'前景理论','loss':'损失厌恶','anchor':'锚定效应','peakend':'峰终定律','frame':'框架效应'};
+  wrap.innerHTML = order.map(id=>{
+    const l = LOGIC[id];
+    if(!l) return '';
+    return `<div class="card" style="margin-bottom:16px">
+      <h4 style="margin-bottom:16px;color:var(--clay)">${labels[id]}</h4>
+      <div class="logic-chain">
+        ${l.steps.map((s,i)=>`
+          <div class="logic-step">
+            <div class="logic-node">${i+1}</div>
+            <div class="content">
+              <h4>${s.t}</h4>
+              <p>${s.d}</p>
+              ${s.s?`<div class="src"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>${s.s}</div>`:''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= 渲染：案例 ================= */
+/* 案例按「场景 → 结果 → 机制拆解 → 怎么用 → 出处」五段展开：
+   前两段回答「发生了什么」，中间两段回答「为什么、我怎么用」，出处保证可追溯。
+   来源徽章三档：原书实验 / 外部真实研究 / AI 推演，绝不把 AI 推演伪装成书中内容。 */
+const SRC_HINT = {book:'原书真实实验，已标注章节出处', study:'书外真实研究，已标注文献出处', ai:'AI 依据理论推演的示例，不是书中内容'};
+function srcBadge(s){
+  if(s.t === 'book'){ const m = s.text.match(/第[^章]*章/); return '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v7"/><path d="M9 9h6"/></svg></span>原书 · ' + (m ? m[0] : '书中'); }
+  if(s.t === 'study'){ const m = s.text.match(/\d{4}/); return '🔬 真实研究' + (m ? ' · ' + m[0] : ''); }
+  return '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>AI 推演';
+}
+function renderCases(){
+  const wrap = document.getElementById('caseContainer');
+  if(!wrap) return;
+  const list = CASES[currentCase].filter(c => caseFilter === 'all' || c.tid === caseFilter);
+  if(!list.length){ wrap.innerHTML = '<div class="case-empty">该理论暂无案例</div>'; return; }
+  wrap.innerHTML = list.map(c=>`
+    <div class="case-card${caseBrief?' brief':''}">
+      <div class="case-top">
+        <span class="case-tag" title="查看该理论详解" onclick="focusTheory('${c.tid}')">${c.tag} ›</span>
+        <span class="src-badge ${c.src.t}" title="${SRC_HINT[c.src.t]}">${srcBadge(c.src)}</span>
+      </div>
+      <h4>${c.title}</h4>
+      <div class="case-sec">
+        <div class="lb">场景</div>
+        <p>${c.scene}</p>
+      </div>
+      <div class="case-result">
+        <div class="lb">结果 · 反直觉的地方</div>
+        <p>${c.result}</p>
+      </div>
+      <div class="case-sec case-extra">
+        <div class="lb">为什么会这样（一句话）</div>
+        <p>${c.why}</p>
+      </div>
+      <div class="case-sec case-extra">
+        <div class="lb">机制拆解 · 每一步对应理论的一个环节</div>
+        <ol class="case-steps">${c.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+      </div>
+      <div class="case-use case-extra">
+        <div class="lb">怎么用在你身上</div>
+        <p>${c.use}</p>
+      </div>
+      <div class="case-foot">
+        <div class="case-src">出处：${c.src.text}</div>
+        <div class="case-link" onclick="focusTheory('${c.tid}')"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>回到《${c.tag}》详解</div>
+      </div>
+    </div>`).join('');
+}
+/* 按理论筛选：案例本来就是为了理解理论，得能按理论反查 */
+function renderCaseFilter(){
+  const wrap = document.getElementById('caseFilter');
+  if(!wrap) return;
+  const list = CASES[currentCase];
+  const map = {};
+  list.forEach(c => { if(c.tid) map[c.tid] = c.tag; });
+  wrap.innerHTML = `<div class="case-chip${caseFilter==='all'?' active':''}" onclick="setCaseFilter('all')">全部 ${list.length}</div>`
+    + Object.keys(map).map(id=>`<div class="case-chip${caseFilter===id?' active':''}" onclick="setCaseFilter('${id}')">${map[id]}</div>`).join('');
+}
+function setCaseFilter(t){ caseFilter = t; renderCaseFilter(); renderCases(); }
+function toggleCaseMode(){
+  caseBrief = !caseBrief;
+  const btn = document.getElementById('caseMode');
+  if(btn) btn.textContent = caseBrief ? '完整模式' : '精简模式';
+  renderCases();
+}
+
+/* ================= 渲染：圈子话题 ================= */
+function renderCircles(){
+  const tabs = document.getElementById('circleTabs');
+  tabs.innerHTML = Object.keys(CIRCLES).map(k=>`
+    <div class="circle-tab ${k===currentCircle?'active':''}" onclick="setCircle('${k}')">${CIRCLES[k].name}</div>`).join('');
+  renderTopics();
+}
+function renderTopics(){
+  const list = document.getElementById('topicList');
+  list.innerHTML = CIRCLES[currentCircle].topics.map(t=>`
+    <div class="topic-card">
+      <div class="topic-q">${t.q}</div>
+      <div class="topic-meta">
+        ${t.meta.map(m=> m.startsWith('热度')?`<span class="hot">🔥 ${m.replace('热度 ','')}</span>`:`<span>🏷 ${m.replace('关联：','')}</span>`).join('')}
+        <span class="join" onclick="gotoQuiz()">加入讨论 →</span>
+      </div>
+    </div>`).join('');
+}
+
+/* ================= 渲染：掌握度侧栏 ================= */
+function renderMastery(){
+  const wrap = document.getElementById('masteryList');
+  const defs = [
+    {id:'sys', name:'双系统模型'},
+    {id:'loss', name:'损失厌恶'},
+    {id:'anchor', name:'锚定效应'}
+  ];
+  const color = {mastered:'var(--green)',partial:'var(--yellow)',failed:'var(--red)',pending:'var(--line-2)'};
+  const stateLabel = {mastered:'已掌握',partial:'部分掌握',failed:'未掌握',pending:'待评测'};
+  wrap.innerHTML = defs.map(d=>{
+    const m = mastery[d.id];
+    const pct = m.score || 0;
+    return `<div class="m-item">
+      <div class="m-top">
+        <span class="m-name">${d.name}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="m-val">${pct}%</span>
+          <span class="m-state ${m.state}">${stateLabel[m.state]}</span>
+        </div>
+      </div>
+      <div class="m-bar"><div class="m-fill" style="width:${pct}%;background:${color[m.state]}"></div></div>
+    </div>`;
+  }).join('');
+  // 掌握度变了 → 思维导图的节点状态同步刷新（仅在导图可见时重排，避免无谓计算）
+  const mp = document.getElementById('sub-map');
+  if(mp && !mp.classList.contains('hidden')) renderMindMap({keepView:true});
+}
+
+/* ================= 问答评测引擎 ================= */
+function resetQuiz(){
+  mastery = {
+    sys:{score:0, state:'pending', fail:0},
+    loss:{score:0, state:'pending', fail:0},
+    anchor:{score:0, state:'pending', fail:0}
+  };
+  quizQueue = ['q1','q2','q3'];
+  phase = 'round1';
+  reviewList = [];
+  justRead = false;
+  started = true;
+  quizPhase = 'idle';
+  const body = document.getElementById('chatBody');
+  body.innerHTML = '';
+  renderMastery();
+  // 开场
+  pushMsg('ai', QUIZ.intro.ai);
+  setTimeout(()=>askQuestion(quizQueue.shift()), 600);
+}
+
+function pushMsg(role, html){
+  const body = document.getElementById('chatBody');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `<div class="bubble">${html}</div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+  return div;
+}
+
+function askQuestion(qid){
+  const q = QUIZ[qid];
+  pushMsg('ai', `<div class="q-label">${q.label}</div>${q.q}`);
+  quizPhase = 'asking';
+  currentQid = qid;
+  setInputEnabled(true);
+}
+
+let currentQid = null;
+
+function setInputEnabled(on){
+  document.getElementById('chatInput').disabled = !on;
+  document.getElementById('sendBtn').disabled = !on;
+}
+
+function fillSampleGood(){
+  const samples = {
+    q1:'系统1是快思考，自动、凭直觉、无意识、不费力；系统2是慢思考，需要理性分析和集中注意力，比较费力。日常大多由系统1做主。',
+    q2:'因为损失厌恶指损失带来的痛苦大约是同等收益的2倍，所以投资者会死扛亏损不肯止损、又急于卖掉盈利的股票，来回避确认损失的痛苦。',
+    q3:'我会用结构化面试：先定好评分标准和评分表，逐项打分；避免先入为主，隔离无关信息，多人独立打分后再讨论，防止被第一印象锚定。',
+    q1b:'比如开车，系统1自动处理换挡、看路况这些熟悉动作，几乎不费力；一旦遇到突发路况，系统2马上接管，集中注意力分析判断怎么避让。',
+    q2b:'因为人厌恶确定的损失，宁可去冒险赌一把，也不愿意接受100%的亏损。这就是损失厌恶在亏损区间的体现——为了翻本愿意承担更大风险。',
+    q3b:'因为先看到的报价会成为一个锚点，成为我后续谈判的参考基准，之后我的出价只会在这个锚点附近做不充分的调整，被它带偏了。'
+  };
+  document.getElementById('chatInput').value = samples[currentQid] || '';
+}
+function fillSampleBad(){
+  const samples = {
+    q1:'系统1和系统2就是左右脑，一个感性一个理性，没什么区别。',
+    q2:'投资者亏钱是因为运气不好，跟心理没什么关系。',
+    q3:'面试就是看感觉，聊得开心就录用了，不需要什么方法。',
+    q1b:'系统1就是慢的，系统2就是快的，差不多。',
+    q2b:'确定会损失的话那肯定要冒险啊，因为稳输不如赌一把，这是常识。',
+    q3b:'报价高低无所谓，我谈判都是凭感觉来，不看什么参考。'
+  };
+  document.getElementById('chatInput').value = samples[currentQid] || '';
+}
+
+function onInputKey(e){
+  if(e.key==='Enter' && !e.shiftKey){
+    e.preventDefault();
+    submitAnswer();
+  }
+}
+
+function submitAnswer(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text || quizPhase!=='asking') return;
+  pushMsg('user', text);
+  input.value = '';
+  setInputEnabled(false);
+  quizPhase = 'answered';
+  judge(text);
+}
+
+function judge(userText){
+  const q = QUIZ[currentQid];
+  const low = userText.toLowerCase();
+  const hits = q.keywords.filter(k=>low.includes(k.toLowerCase()));
+  const ratio = hits.length / q.keywords.length;
+  let grade = ratio>=0.5?'mastered':(ratio>=0.25?'partial':'failed');
+
+  // 更新掌握度
+  const th = q.theory;
+  const scoreMap = {mastered:85, partial:60, failed:28};
+  mastery[th].score = scoreMap[grade];
+  mastery[th].state = grade;
+  if(grade==='failed') mastery[th].fail++;
+  saveState();
+
+  const vTitle = {mastered:'<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></span>已掌握', partial:'🟡 部分掌握', failed:'<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>未掌握'}[grade];
+  const dims = {mastered:[88,82,85], partial:[62,58,60], failed:[30,26,28]}[grade];
+  pushMsg('ai', `
+    <div class="verdict ${grade}">
+      <span class="v-title">${vTitle}</span>
+      ${q.feedback[grade]}
+      <div class="score-bars">
+        <span class="score-dim">准确性 <b>${dims[0]}</b></span>
+        <span class="score-dim">完整性 <b>${dims[1]}</b></span>
+        <span class="score-dim">迁移性 <b>${dims[2]}</b></span>
+      </div>
+    </div>`);
+  renderMastery();
+
+  // 读完原文后的再考：不再触发原文推荐
+  const wasJustRead = justRead;
+  justRead = false;
+
+  // 判断下一步
+  setTimeout(()=>{
+    if(grade==='failed' && mastery[th].fail>=2 && !wasJustRead){
+      pushQuote(th);
+      return;
+    }
+    advance();
+  }, 700);
+}
+
+function pushQuote(th){
+  const q = QUOTES[th];
+  pushMsg('ai', `
+    <div class="quote-card">
+      <div class="q-head">
+        <span class="q-tag"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v7"/><path d="M9 9h6"/></svg></span>原文推荐</span>
+        <span class="q-src">${q.src}</span>
+      </div>
+      <blockquote>${q.text}</blockquote>
+      <div style="font-size:12px;color:var(--ink-2);margin-top:10px">这个理解点反复卡住，建议你先精读上面这段原文，读完后告诉我，我换个问法再考你。</div>
+      <button class="read-done" onclick="onReadDone('${th}')">我已读完，继续</button>
+    </div>`);
+}
+
+function onReadDone(th){
+  // 读完原文后，换问法再考一次（这次答完不再推原文）
+  justRead = true;
+  const bMap = {sys:'q1b', loss:'q2b', anchor:'q3b'};
+  askQuestion(bMap[th]);
+}
+
+function advance(){
+  if(quizQueue.length > 0){
+    askQuestion(quizQueue.shift());
+    return;
+  }
+  if(phase === 'round1'){
+    // 第一轮结束，进入复查阶段
+    phase = 'review';
+    reviewList = ['sys','loss','anchor'].filter(t => mastery[t].state !== 'mastered');
+    reviewNext();
+    return;
+  }
+  if(phase === 'review'){
+    reviewNext();
+    return;
+  }
+  finishQuiz();
+}
+
+function reviewNext(){
+  if(reviewList.length === 0){
+    finishQuiz();
+    return;
+  }
+  const th = reviewList.shift();
+  const bMap = {sys:'q1b', loss:'q2b', anchor:'q3b'};
+  askQuestion(bMap[th]);
+}
+
+function finishQuiz(){
+  const vals = Object.values(mastery);
+  const avg = Math.round(vals.reduce((s,v)=>s+v.score,0)/vals.length);
+  const masteredCount = vals.filter(v=>v.score>=80).length;
+  const allMastered = masteredCount === vals.length;
+  const headline = allMastered ? '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>全部掌握 · 可以收进书架了' : '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>本轮评测完成';
+  const advice = allMastered
+    ? '三个核心理论都已达标，现在把它放进书架，之后随时可回来巩固。'
+    : '还有 ' + (vals.length - masteredCount) + ' 个理论未达标——也可以先放进书架，之后从书架点开随时补读、再考。';
+  pushMsg('ai', `
+    <div class="finish-card">
+      <h4>${headline}</h4>
+      <p>综合掌握度 <b style="font-size:20px">${avg}%</b> · 已掌握 ${masteredCount}/${vals.length} 个核心理论</p>
+      <p style="margin-top:8px;font-size:13px;opacity:.88">${advice}</p>
+      <div class="finish-actions">
+        <button class="btn-w" id="btnShelve" onclick="shelveCurrentBook()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>放入书架</button>
+        <button class="btn-w-ghost" onclick="resetQuiz()">🔄 再测一轮</button>
+      </div>
+    </div>`);
+  phase = 'done';          // 本轮评测走完（决定入架时标记为「已读完」还是「未读完」）
+  quizPhase = 'idle';
+  setInputEnabled(false);
+  renderMastery();
+}
+
+/* ================= 交互：放入书架（不要求评测完成） ================= */
+function toast(msg){
+  const el = document.getElementById('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 2400);
+}
+
+function currentMastery(){
+  const vals = Object.values(mastery);
+  return {
+    avg: Math.round(vals.reduce((s,v)=>s+v.score,0)/vals.length),
+    mastered: vals.filter(v=>v.score>=80).length,
+    tested: vals.filter(v=>v.state!=='pending').length,
+    total: vals.length
+  };
+}
+/* 是否走完了一轮完整评测 */
+function isQuizDone(){ return phase === 'done'; }
+
+function addFinishedToShelf(book){
+  const grid = document.getElementById('shelfGrid');
+  const card = document.createElement('div');
+  card.className = 'book-card just-added';
+  card.dataset.bookId = book.title;
+  card.innerHTML = `
+    <div class="shelf-new-tag">刚入架</div>
+    <div class="cover" style="background:${book.gradient}">
+      <div class="cover-title">${book.initial}</div>
+      <div class="cover-author">${book.authorShort}</div>
+    </div>
+    <h3>${book.title}</h3>
+    <div class="meta">${book.author}</div>
+    ${book.finished
+      ? `<div class="status read"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>已读完 · 掌握度 ${book.mastery}</div>`
+      : `<div class="status paused"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 6v7"/><path d="M9 9h6"/></svg></span>未读完 · 已评测 ${book.tested}/${book.total} 个理论</div>`}
+    <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-unshelve" title="放回「正在精读」" onclick="unshelveFromCard('${book.title}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>${book.finished ? '重新精读' : '继续阅读'}</button>
+      <button class="btn-unshelve btn-remove" title="从书架移除" onclick="removeFromCard('${book.title}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>移除</button>
+    </div>`;
+  card.addEventListener('click', ()=>{
+    openFinished(book.title, book.mastery, book.gradient, book.author, book.finished, book.tested, book.total);
+  });
+  grid.prepend(card);
+  updateShelfCount();
+  setTimeout(()=>card.classList.remove('just-added'), 3600);
+  saveState();
+  return card;
+}
+
+/* 书架卡片上的一键入口：把书移出书架、放回「正在精读」。
+   与详情页里的「重新精读 / 继续阅读」是同一条回路，只是少点一次。 */
+function unshelveFromCard(title, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  openBook(title);
+}
+
+function removeFromCard(title, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  removeFromShelf(title);
+  toast('已从书架移除《'+title+'》');
+}
+
+function removeFromShelf(title){
+  const grid = document.getElementById('shelfGrid');
+  const hit = grid.querySelector('[data-book-id="'+title+'"]');
+  if(hit) hit.remove();
+  updateShelfCount();
+  saveState();
+}
+
+function updateShelfCount(){
+  const cnt = document.getElementById('shelfCount');
+  if(cnt) cnt.textContent = document.getElementById('shelfGrid').children.length;
+}
+
+/* 入架不再要求评测完成：读到一半不想读了，也可以先收进书架。
+   唯一的区别是归档状态——已读完 / 未读完必须诚实区分，不能把没读完的书标成已读完。*/
+function shelveCurrentBook(){
+  if(shelved){
+    showShelf();
+    toast('《'+READING_BOOK.title+'》已在书架中');
+    return;
+  }
+  const m = currentMastery();
+  const finished = isQuizDone();
+  shelved = true;
+  shelvedAsFinished = finished;
+
+  // 1) 书架新增卡片（按是否完成评测给不同状态）
+  addFinishedToShelf(Object.assign({}, READING_BOOK, {
+    mastery: m.avg + '%', finished: finished, tested: m.tested, total: m.total
+  }));
+
+  // 2) 侧边栏：正在精读 → 已入架，露出空态
+  const sb = document.getElementById('sideBookReading');
+  const label = finished ? '已读完 · 掌握度 ' + m.avg + '%'
+                         : '未读完 · 已评测 ' + m.tested + '/' + m.total;
+  sb.classList.remove('active');
+  sb.classList.add('shelved');
+  sb.querySelector('.side-meta').textContent = label;
+  document.getElementById('shelvedTag').classList.remove('hidden');
+  document.getElementById('readingEmpty').classList.remove('hidden');
+
+  // 3) 两处按钮都切成已入架态
+  const b1 = document.getElementById('btnShelve');
+  if(b1){ b1.textContent = '✓ 已在书架'; b1.classList.add('done'); }
+  const b2 = document.getElementById('btnShelveHead');
+  if(b2){ b2.textContent = '✓ 已在书架'; b2.classList.add('done'); }
+  const hint = document.getElementById('shelveHint');
+  if(hint) hint.textContent = finished ? '已读完并入架' : '未读完 · 可从书架点开继续';
+
+  // 4) 对话区给一条确认（未完成时说明状态，不留误解）
+  if(finished){
+    pushMsg('ai', `已把《${READING_BOOK.title}》放进书架 · 综合掌握度 <b>${m.avg}%</b>（已掌握 ${m.mastered}/${m.total}）。<br>之后在书架卡片上点<span style="text-decoration:underline">「重新精读」</span>，就能放回「正在精读」。`);
+  }else{
+    pushMsg('ai', `已把《${READING_BOOK.title}》收进书架，标记为<b>未读完</b>（已评测 ${m.tested}/${m.total} 个理论）。<br>想接着读时在卡片上点<span style="text-decoration:underline">「继续阅读」</span>即可放回「正在精读」，进度不会丢。`);
+  }
+
+  showShelf();
+  toast(finished
+    ? '《'+READING_BOOK.title+'》已放入书架 · 掌握度 '+m.avg+'%'
+    : '《'+READING_BOOK.title+'》已收进书架 · 未读完，可随时继续');
+  saveState();
+}
+
+/* ================= 交互：视图切换 ================= */
+function hideAllViews(){
+  ['view-welcome','view-shelf','view-book','view-finished'].forEach(id=>{
+    document.getElementById(id).classList.add('hidden');
+  });
+}
+function setActiveBookEl(el){
+  document.querySelectorAll('.side-book').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+function setActiveNav(id){
+  document.querySelectorAll('.side-foot-link').forEach(l=>l.classList.remove('active'));
+  if(id){ const el=document.getElementById(id); if(el) el.classList.add('active'); }
+}
+function showWelcome(){
+  hideAllViews();
+  document.getElementById('view-welcome').classList.remove('hidden');
+  setActiveBookEl(null);
+  setActiveNav(null);
+  window.scrollTo(0,0);
+}
+function showShelf(){
+  hideAllViews();
+  document.getElementById('view-shelf').classList.remove('hidden');
+  setActiveBookEl(null);
+  setActiveNav('navShelf');
+  window.scrollTo(0,0);
+}
+function openBook(title){
+  hideAllViews();
+  document.getElementById('view-book').classList.remove('hidden');
+  const sb = document.getElementById('sideBookReading');
+  // 仅当操作的是「思考，快与慢」时，重新精读 = 状态回退：从书架移除，回到「正在精读」
+  const isReading = !title || title === READING_BOOK.title;
+  if(shelved && isReading){
+    removeFromShelf(READING_BOOK.title);
+    shelved = false;
+    sb.classList.remove('shelved');
+    sb.querySelector('.side-meta').textContent = '掌握度 62%';
+    document.getElementById('shelvedTag').classList.add('hidden');
+    document.getElementById('readingEmpty').classList.add('hidden');
+    // 两处按钮恢复
+    const b1 = document.getElementById('btnShelve');
+    if(b1){ b1.textContent = '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>放入书架'; b1.classList.remove('done'); }
+    const b2 = document.getElementById('btnShelveHead');
+    if(b2){ b2.textContent = '📚 放入书架'; b2.classList.remove('done'); }
+    const hint = document.getElementById('shelveHint');
+    if(hint) hint.textContent = '读不下去也可以先收进书架 · 之后随时继续';
+    if(shelvedAsFinished){
+      resetQuiz();
+      toast('已移回「正在精读」，评测重新开始');
+    }else{
+      toast('已移回「正在精读」· 接着上次的进度继续');
+    }
+    shelvedAsFinished = false;
+  }
+  // 上传的书：从书架移除，进入精读
+  if(shelved && !isReading){
+    removeFromShelf(title);
+    shelved = false;
+  }
+  // 动态更新书籍头部信息
+  if(!isReading){
+    const gradients = [
+      'linear-gradient(150deg,#C0603C,#8F3F26)',
+      'linear-gradient(150deg,#2F5D50,#1C3B33)',
+      'linear-gradient(150deg,#C9A227,#96741A)',
+      'linear-gradient(150deg,#5A4A3C,#2E251D)'
+    ];
+    const g = gradients[Math.floor(Math.random()*gradients.length)];
+    document.querySelector('.book-head .cover-lg').style.background = g;
+    document.querySelector('.book-head .cover-lg .cover-title').textContent = title.charAt(0);
+    document.querySelector('.book-head .cover-lg .cover-author').textContent = '已上传';
+    document.querySelector('.book-head-info h2').textContent = title;
+    document.querySelector('.book-head-info .author').textContent = '已上传 · 精读中';
+    document.querySelector('.book-head-info .desc').textContent = '本书已上传至赤牙·AI阅读，你可以使用全部精读功能：查看全书思维导图、核心理论、逻辑链与案例，并通过 AI 提问评测掌握度。';
+    document.querySelector('.book-head-info .tag-row').innerHTML = '<span class="tag">已上传</span>';
+  }
+  setActiveBookEl(sb);
+  setActiveNav(null);
+  window.scrollTo(0,0);
+  saveState();
+}
+function openFinished(title, mastery, gradient, author, finished, tested, total){
+  document.getElementById('finTitle').textContent = title;
+  document.getElementById('finMastery').textContent = mastery;
+  document.getElementById('finAuthor').textContent = author || '已读完';
+  const cover = document.getElementById('finCover');
+  cover.style.background = gradient;
+  cover.textContent = title.charAt(0);
+  const tag = document.getElementById('finTag');
+  const desc = document.getElementById('finDesc');
+  const isUnfinished = (finished === false);
+  if(tag) tag.textContent = isUnfinished ? '未读完' : '已读完';
+  if(desc) desc.textContent = isUnfinished
+    ? '这本书还没读完（已评测 ' + (tested||0) + '/' + (total||0) + ' 个理论）。进度已保留，可随时继续阅读或挑一个理论接着测。'
+    : '你已读完本书，核心理论的掌握情况已保留。可随时「重新精读」巩固。';
+  const btn = document.getElementById('btnReshelf');
+  if(btn){
+    const isReading = title === READING_BOOK.title;
+    btn.textContent = isUnfinished ? '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>继续阅读' : '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>重新精读';
+    // 演示版只有《思考，快与慢》有解析内容：其余书给出提示，避免"打开的是另一本书"的误导
+    btn.onclick = function(){
+      if(isReading) openBook(title);
+      else openBook('思考，快与慢');
+    };
+  }
+  hideAllViews();
+  document.getElementById('view-finished').classList.remove('hidden');
+  setActiveBookEl(null);
+  setActiveNav('navShelf');
+  window.scrollTo(0,0);
+}
+function switchMain(main){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.main===main));
+  document.getElementById('main-analysis').classList.toggle('hidden', main!=='analysis');
+  document.getElementById('main-discuss').classList.toggle('hidden', main!=='discuss');
+  if(main==='discuss'){
+    // 默认进圈子话题
+    switchSub('circle');
+  }
+}
+function switchSub(sub){
+  const mapEl = document.getElementById('sub-map');
+  const mapWasHidden = !mapEl || mapEl.classList.contains('hidden');
+  document.querySelectorAll('.subtab').forEach(t=>t.classList.toggle('active', t.dataset.sub===sub));
+  ['overview','map','theory','logic','case','selfcheck','circle','quiz'].forEach(s=>{
+    const el = document.getElementById('sub-'+s);
+    if(el) el.classList.toggle('hidden', s!==sub);
+  });
+  /* 导图由隐藏切到可见时必须重新适应窗口：面板隐藏时 clientWidth 为 0，
+     初始化那次 fit 是用兜底尺寸算出来的，不重算会偏。已可见时则保留用户的视角。 */
+  if(sub==='map'){
+    if(mapWasHidden && !mapFitted){ renderMindMap(); mapFitted = true; }  // 第一次真正显示：按真实尺寸适应
+    else renderMindMap({keepView:true});                                  // 之后一律保留用户的视角
+  }
+  if(sub==='quiz' && !started) resetQuiz();
+  if(window.scrollTo) window.scrollTo(0,0);
+}
+function switchCase(c){
+  currentCase = c;
+  caseFilter = 'all';   // 书内/现实两组案例的理论集合不同，切组时重置筛选
+  document.querySelectorAll('#caseSwitch button').forEach(b=>b.classList.toggle('active', b.dataset.case===c));
+  renderCaseFilter();
+  renderCases();
+}
+function setCircle(k){
+  currentCircle = k;
+  renderCircles();
+}
+function toggleTheory(id){
+  document.getElementById('tc-'+id).classList.toggle('open');
+}
+function gotoQuiz(){
+  switchMain('discuss');
+  switchSub('quiz');
+}
+function goToLogic(){
+  switchMain('analysis');
+  switchSub('logic');
+  window.scrollTo(0,0);
+}
+
+/* ================= 自测评估 ================= */
+/* 书中经典测试题：做完看到自己的答案与书中结论的对比，目的是「看见自己的判断模式」而非打分。 */
+const SELF_CHECKS = [
+  {id:'crt1', tag:'认知反射', q:'一个球拍和一个球总共 1.10 元。球拍比球贵 1 元。球多少钱？',
+   ans:'0.05 元（5 分）', trap:'0.10 元（10 分）——系统 1 的直觉答案',
+   explain:'如果球是 0.10 元，球拍就是 1.10 元，总和就是 1.20 元，不是 1.10 元。正确答案是 0.05 元。这道题来自 Frederick（2005）的认知反射测试（CRT），系统 1 会快速给出「0.10」这个诱人但错误的答案，系统 2 需要费力才能纠正。',
+   src:'Frederick 2005 · 书中第 2 部分讨论'},
+  {id:'crt2', tag:'认知反射', q:'5 台机器 5 分钟生产 5 个零件。100 台机器生产 100 个零件需要多少分钟？',
+   ans:'5 分钟', trap:'100 分钟——系统 1 被「100」这个数字锚定',
+   explain:'每台机器生产一个零件需要 5 分钟。100 台机器同时工作，生产 100 个零件仍然只需要 5 分钟。系统 1 被「100」这个数字锚定，直接跳到了 100 分钟。',
+   src:'Frederick 2005 · CRT'},
+  {id:'crt3', tag:'认知反射', q:'湖里有一片睡莲，每天面积扩大一倍。如果 48 天能覆盖整个湖面，那么覆盖一半需要多少天？',
+   ans:'47 天', trap:'24 天——系统 1 把「一半」和「48÷2」直接关联',
+   explain:'每天扩大一倍，第 47 天是一半，第 48 天就是整个湖面。系统 1 看到「一半」就自动做了除法（48÷2=24），忽略了「翻倍」这个关键条件。',
+   src:'Frederick 2005 · CRT'},
+  {id:'linda', tag:'合取谬误', q:'琳达，31 岁，单身，坦率、非常聪明，主修哲学。学生时代深切关注歧视与社会公正，也参加过反核示威。以下哪种可能性更大？<br><br>A. 琳达是银行柜员。<br>B. 琳达是银行柜员，且积极参与女权运动。',
+   ans:'A 的概率更大（合取谬误：两件事同时发生的概率不可能高于其中一件）',
+   trap:'B——系统 1 觉得「银行柜员且女权」更「像」琳达',
+   explain:'85–90% 的人选了 B，包括受过统计训练的研究生。但两件事同时发生的概率 ≤ 其中任何一件。系统 1 用「像不像」（代表性）替代了「概率有多高」。',
+   src:'Tversky & Kahneman 1983 · 第 15 章'},
+  {id:'asia', tag:'框架效应', q:'预计 600 人将死于一种疾病。你选哪个方案？<br><br>正框架：A. 确定救活 200 人；B. 有 1/3 概率救活 600 人。<br><br>负框架：C. 确定死亡 400 人；D. 有 1/3 概率无人死亡。',
+   ans:'A 与 C、B 与 D 客观等价——但正框架下 72% 选 A（保守），负框架下 78% 选 D（冒险）',
+   trap:'同一个人可能在正框架下选 A，负框架下选 D',
+   explain:'描述改变了参照点：「救活」让人待在收益区（规避风险），「死亡」让人掉进损失区（宁可赌一把）。客观结果自始至终没变。',
+   src:'Tversky & Kahneman 1981 · 第 34 章'},
+  {id:'coin', tag:'损失厌恶', q:'抛一枚公平硬币。反面你输 100 元，正面你赢 X 元。X 至少是多少，你才愿意赌？',
+   ans:'多数人要求 X ≥ 200 元', trap:'100 元（公平赌局）',
+   explain:'损失的心理痛苦约为同等收益的 2 倍。所以人们要求收益至少是损失的 2 倍才肯参与。这是损失厌恶最直接的体现。',
+   src:'Kahneman & Tversky · 第 28 章'}
+];
+
+function renderSelfChecks(){
+  const wrap = document.getElementById('qzContainer');
+  if(!wrap) return;
+  wrap.innerHTML = SELF_CHECKS.map(c => `
+    <div class="qz-card" id="qz-${c.id}">
+      <div class="qz-head" onclick="toggleSelfCheck('${c.id}')">
+        <span class="qz-tag">${c.tag}</span>
+        <span class="qz-q">${c.q}</span>
+        <span class="qz-arrow">▾</span>
+      </div>
+      <div class="qz-body">
+        <div class="qz-ans">
+          <div class="qz-label">正确答案</div>
+          <p>${c.ans}</p>
+        </div>
+        <div class="qz-trap">
+          <div class="qz-label">系统 1 的陷阱</div>
+          <p>${c.trap}</p>
+        </div>
+        <div class="qz-explain">
+          <div class="qz-label">为什么</div>
+          <p>${c.explain}</p>
+        </div>
+        <div class="qz-src">出处：${c.src}</div>
+      </div>
+    </div>`).join('');
+}
+function toggleSelfCheck(id){
+  document.getElementById('qz-'+id).classList.toggle('open');
+}
+
+/* ================= 持久化存储（localStorage） ================= */
+/* 存储的数据结构：
+   STORAGE_KEY = 'chiya_reading_data'
+   {
+     shelf: [{title, author, authorShort, gradient, initial, mastery, finished, tested, total, uploaded, ext, cover}],
+     mastery: {sys:{score,state,fail}, loss:{...}, anchor:{...}},
+     quizPhase, phase, reviewList, justRead, started, shelved, shelvedAsFinished
+   }
+*/
+const STORAGE_KEY = 'chiya_reading_data';
+
+function saveState(){
+  try {
+    const data = {
+      shelf: getShelfData(),
+      mastery: mastery,
+      quizPhase: quizPhase,
+      phase: phase,
+      reviewList: reviewList,
+      justRead: justRead,
+      started: started,
+      shelved: shelved,
+      shelvedAsFinished: shelvedAsFinished
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e){ /* storage full or unavailable */ }
+}
+
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(data.mastery) mastery = data.mastery;
+    if(data.quizPhase) quizPhase = data.quizPhase;
+    if(data.phase) phase = data.phase;
+    if(data.reviewList) reviewList = data.reviewList;
+    if(data.justRead !== undefined) justRead = data.justRead;
+    if(data.started !== undefined) started = data.started;
+    if(data.shelved !== undefined) shelved = data.shelved;
+    if(data.shelvedAsFinished !== undefined) shelvedAsFinished = data.shelvedAsFinished;
+    if(data.shelf && data.shelf.length){
+      restoreShelf(data.shelf);
+    }
+    return true;
+  } catch(e){ return false; }
+}
+
+function getShelfData(){
+  const grid = document.getElementById('shelfGrid');
+  if(!grid) return [];
+  return [...grid.querySelectorAll('.book-card')].map(card => {
+    const title = card.dataset.bookId || card.querySelector('h3').textContent;
+    const meta = card.querySelector('.meta')?.textContent || '';
+    const statusEl = card.querySelector('.status');
+    const isFinished = statusEl?.classList.contains('read');
+    const masteryText = statusEl?.textContent || '';
+    const m = masteryText.match(/(\d+)%/);
+    return {
+      title: title,
+      author: meta,
+      mastery: m ? m[1] + '%' : '0%',
+      finished: isFinished,
+      tested: 0, total: 0,
+      uploaded: true
+    };
+  });
+}
+
+function restoreShelf(shelfData){
+  const grid = document.getElementById('shelfGrid');
+  if(!grid) return;
+  shelfData.forEach(book => {
+    if(book.title === '思考，快与慢' || book.title === '原则' || book.title === '影响力' || book.title === '金字塔原理') return; // 演示书不重复添加
+    const gradients = [
+      'linear-gradient(150deg,#C0603C,#8F3F26)',
+      'linear-gradient(150deg,#2F5D50,#1C3B33)',
+      'linear-gradient(150deg,#C9A227,#96741A)',
+      'linear-gradient(150deg,#5A4A3C,#2E251D)'
+    ];
+    const g = gradients[Math.floor(Math.random()*gradients.length)];
+    const displayName = book.title.length > 12 ? book.title.slice(0,12)+'…' : book.title;
+    const card = document.createElement('div');
+    card.className = 'book-card';
+    card.dataset.bookId = book.title;
+    card.innerHTML = `
+      <div class="cover" style="background:${g}">
+        <div class="cover-title">${displayName}</div>
+        <div class="cover-author">已上传</div>
+      </div>
+      <h3>${displayName}</h3>
+      <div class="meta">${book.author || '已上传'}</div>
+      <div class="status new"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>已上传 · 开始精读</div>
+      <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-unshelve" title="开始精读本书" onclick="unshelveFromCard('${book.title.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>开始精读</button>
+      <button class="btn-unshelve btn-remove" title="从书架移除" onclick="removeFromCard('${book.title.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>移除</button>
+    </div>`;
+    card.addEventListener('click', ()=>{
+      openBook(book.title);
+    });
+    grid.appendChild(card);
+  });
+  updateShelfCount();
+}
+
+/* ================= 初始化 ================= */
+// 先尝试加载持久化数据，再渲染
+loadState();
+renderOverview();
+renderGraph();
+renderTheories();
+renderLogic();
+renderCaseFilter();
+renderCases();
+renderCircles();
+renderMastery();
+renderMindMap();
+renderSelfChecks();
+
+/* ================= 上传电子书 ================= */
+function openUpload(){
+  document.getElementById('uploadModal').classList.remove('hidden');
+  resetUploadUI();
+}
+function closeUpload(){
+  document.getElementById('uploadModal').classList.add('hidden');
+  resetUploadUI();
+}
+function resetUploadUI(){
+  document.getElementById('uploadStage1').classList.remove('hidden');
+  document.getElementById('uploadStage2').classList.add('hidden');
+  document.getElementById('doneBadge').classList.add('hidden');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('upBar').style.width = '0%';
+  document.getElementById('upPct').textContent = '0%';
+  document.getElementById('parseBar').style.width = '0%';
+  document.getElementById('parsePct').textContent = '0%';
+}
+/* ================= 后端 API 配置 ================= */
+const API_BASE = window.location.origin;  // 同域部署，自动适配
+
+async function apiPost(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function apiGet(path) {
+  const res = await fetch(API_BASE + path);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function apiDelete(path) {
+  const res = await fetch(API_BASE + path, { method: 'DELETE' });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function handleFiles(files){
+  if(!files || files.length===0) return;
+  const file = files[0];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['epub','pdf','mobi','txt'].includes(ext)){
+    alert('仅支持 EPUB / PDF / MOBI / TXT 格式');
+    return;
+  }
+  document.getElementById('uploadStage1').classList.add('hidden');
+  document.getElementById('uploadStage2').classList.remove('hidden');
+  document.getElementById('uploadFileName').textContent = file.name;
+  document.getElementById('uploadFileSize').textContent = formatSize(file.size);
+
+  // 真正的后端上传
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('user_id', 'default');
+
+  // 上传进度模拟（真实进度需要 XMLHttpRequest，这里简化）
+  runProgress('upBar','upPct', 1500, async ()=>{
+    try {
+      const res = await fetch(API_BASE + '/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '上传失败');
+
+      // 轮询解析状态
+      const bookId = data.id;
+      runProgress('parseBar','parsePct', 3000, async ()=>{
+        // 等待解析完成
+        let status = 'uploaded';
+        let attempts = 0;
+        while (status === 'uploaded' || status === 'parsing') {
+          await new Promise(r => setTimeout(r, 2000));
+          try {
+            const statusRes = await fetch(API_BASE + '/api/upload/' + bookId + '/status');
+            const statusData = await statusRes.json();
+            status = statusData.status;
+          } catch(e) { break; }
+          attempts++;
+          if (attempts > 60) break; // 最多等 2 分钟
+        }
+
+        document.getElementById('doneBadge').classList.remove('hidden');
+        addToShelf(file.name.replace(/\.[^.]+$/,''), ext, null);
+      });
+    } catch(e) {
+      alert('上传失败: ' + e.message);
+      closeUpload();
+    }
+  });
+}
+function extractPdfCover(file){
+  if(typeof pdfjsLib === 'undefined') return Promise.resolve(null);
+  if(!pdfjsLib.GlobalWorkerOptions.workerSrc){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  return file.arrayBuffer()
+    .then(buf => pdfjsLib.getDocument({data: buf}).promise)
+    .then(pdf => pdf.getPage(1))
+    .then(page => {
+      const viewport = page.getViewport({scale: 1});
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      return page.render({canvasContext: ctx, viewport: viewport}).promise.then(()=>{
+        return canvas.toDataURL('image/jpeg', 0.85);
+      });
+    })
+    .catch(()=>null);
+}
+function runProgress(barId, pctId, duration, onDone){
+  const bar = document.getElementById(barId);
+  const pct = document.getElementById(pctId);
+  let p = 0;
+  const interval = setInterval(()=>{
+    p += Math.random()*18 + 4;
+    if(p >= 100){
+      p = 100; clearInterval(interval);
+      bar.style.width = '100%'; pct.textContent = '100%';
+      setTimeout(onDone, 250);
+    }else{
+      bar.style.width = p+'%'; pct.textContent = Math.floor(p)+'%';
+    }
+  }, 28);
+}
+function formatSize(bytes){
+  if(!bytes) return '未知大小';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(0)+' KB';
+  return (bytes/1024/1024).toFixed(1)+' MB';
+}
+function addToShelf(name, ext, cover){
+  const grid = document.getElementById('shelfGrid');
+  const gradients = [
+    'linear-gradient(150deg,#C0603C,#8F3F26)',
+    'linear-gradient(150deg,#2F5D50,#1C3B33)',
+    'linear-gradient(150deg,#C9A227,#96741A)',
+    'linear-gradient(150deg,#5A4A3C,#2E251D)'
+  ];
+  const g = gradients[Math.floor(Math.random()*gradients.length)];
+  const displayName = name.length > 12 ? name.slice(0,12)+'…' : name;
+  const coverInner = cover
+    ? `<img class="cover-img" src="${cover}" alt="">`
+    : `<div class="cover-title">${displayName}</div><div class="cover-author">${ext.toUpperCase()} · 已上传</div>`;
+  const card = document.createElement('div');
+  card.className = 'book-card';
+  card.innerHTML = `
+    <div class="cover" style="background:${g}">
+      ${coverInner}
+    </div>
+    <h3>${displayName}</h3>
+    <div class="meta">${ext.toUpperCase()} · 已上传</div>
+    <div class="status new"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>已上传 · 开始精读</div>
+    <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-unshelve" title="开始精读本书" onclick="unshelveFromCard('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>开始精读</button>
+      <button class="btn-unshelve btn-remove" title="从书架移除" onclick="removeFromCard('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>移除</button>
+    </div>`;
+  card.addEventListener('click', ()=>{
+    openBook(name);
+  });
+  grid.prepend(card);
+  const cnt = document.getElementById('shelfCount');
+  if(cnt) cnt.textContent = grid.children.length;
+  saveState();
+}
+</script>
+
+<div class="toast" id="toast"></div>
+
+<!-- ================= 上传电子书模态框 ================= -->
+<div id="uploadModal" class="modal hidden">
+  <div class="modal-mask" onclick="closeUpload()"></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>上传电子书</h3>
+      <button class="modal-close" onclick="closeUpload()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-sub">上传后 AI 将自动解析：核心理论、关联理论、验证逻辑链与案例</div>
+
+    <!-- 阶段1：选择文件 -->
+    <div id="uploadStage1">
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="event.preventDefault();this.classList.remove('drag');handleFiles(event.dataTransfer.files)">
+        <span class="dz-icon">📤</span>
+        <div class="dz-main">拖拽文件到这里，或点击选择</div>
+        <div class="dz-sub">支持 EPUB / PDF / MOBI / TXT 格式</div>
+        <div class="dz-tags">
+          <span class="dz-tag">.epub</span><span class="dz-tag">.pdf</span><span class="dz-tag">.mobi</span><span class="dz-tag">.txt</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept=".epub,.pdf,.mobi,.txt" hidden onchange="handleFiles(this.files)">
+    </div>
+
+    <!-- 阶段2：上传 + 解析进度 -->
+    <div id="uploadStage2" class="hidden">
+      <div class="file-box">
+        <div class="file-icon">📕</div>
+        <div>
+          <div class="file-name" id="uploadFileName">book.epub</div>
+          <div class="file-size" id="uploadFileSize">1.2 MB</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-top"><span class="stage-name">上传中</span><span class="stage-pct" id="upPct">0%</span></div>
+        <div class="stage-bar"><div class="stage-fill" id="upBar" style="width:0%"></div></div>
+      </div>
+      <div class="stage">
+        <div class="stage-top"><span class="stage-name">AI 解析中 · 提炼核心理论 / 逻辑链 / 案例</span><span class="stage-pct" id="parsePct">0%</span></div>
+        <div class="stage-bar"><div class="stage-fill" id="parseBar" style="width:0%"></div></div>
+      </div>
+      <div class="done-badge hidden" id="doneBadge"><span class="tick">✓</span> 解析完成，已加入书架</div>
+      <div class="modal-actions">
+        <button class="modal-btn ghost" onclick="closeUpload()">完成</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

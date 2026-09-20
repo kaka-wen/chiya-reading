@@ -1,0 +1,8 @@
+# 环境变量文件（含 API key）
+.env
+# 数据库文件
+data/
+# 上传文件
+uploads/
+# 依赖
+node_modules/
