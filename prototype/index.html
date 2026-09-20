@@ -92,6 +92,8 @@
   .wl-cta{display:flex;gap:14px;justify-content:center;margin-top:32px;flex-wrap:wrap}
   .wl-btn{background:var(--pine);color:#fff;border:none;font-family:inherit;font-size:14px;font-weight:600;padding:11px 24px;border-radius:4px;cursor:pointer;transition:.15s;letter-spacing:.5px}
   .wl-btn:hover{background:var(--pine-2);transform:translateY(-1px)}
+  .wl-btn.primary{background:var(--clay);box-shadow:0 4px 14px rgba(143,63,38,.28)}
+  .wl-btn.primary:hover{background:var(--clay-2);box-shadow:0 6px 20px rgba(143,63,38,.35)}
   .wl-btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
   .wl-btn.ghost:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg);transform:none}
   .wl-feat{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:8px}
@@ -602,7 +604,8 @@
         <h1 class="wl-title">把「读书」变成「真掌握」</h1>
         <p class="wl-lead">AI 帮你提炼核心理论，再通过交互式提问检验你是否真的吃透了这本书。<br>不是「读过」，是「掌握」。</p>
         <div class="wl-cta">
-          <button class="wl-btn" onclick="showShelf()">从书架开始</button>
+          <button class="wl-btn primary" onclick="openUpload()"><span class="plus" style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 上传电子书</button>
+          <button class="wl-btn ghost" onclick="showShelf()">我的书架</button>
           <button class="wl-btn ghost" onclick="openBook('思考，快与慢')">体验演示书</button>
         </div>
       </div>
