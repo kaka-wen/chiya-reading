@@ -112,6 +112,23 @@
   .wl-feat-item p{font-size:13.5px;color:var(--ink-2);line-height:1.85}
   @media (max-width:760px){ .wl-hero{padding:40px 12px 32px} .wl-title{font-size:28px} .wl-feat{grid-template-columns:1fr;gap:20px} }
 
+  /* ===== 电子书商城 ===== */
+  .store-hero{margin:12px 0 28px}
+  .store-hero h1{font-size:34px;font-weight:700;letter-spacing:-.8px;line-height:1.25;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif}
+  .store-hero p{color:var(--ink-2);margin-top:10px;font-size:16px;line-height:1.7}
+  .store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+  .store-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:24px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);display:flex;gap:20px}
+  .store-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
+  .store-cover{width:80px;height:112px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:22px;box-shadow:0 2px 8px rgba(42,38,34,.12)}
+  .store-info{flex:1;min-width:0}
+  .store-info h3{font-size:17px;font-weight:700;letter-spacing:-.2px;margin-bottom:4px;line-height:1.35}
+  .store-info .author{font-size:13px;color:var(--ink-2);margin-bottom:6px}
+  .store-info .desc{font-size:13px;color:var(--ink-3);line-height:1.7;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .store-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--pine-bg);color:var(--pine-2)}
+  .store-tag.free{background:var(--gold-bg);color:var(--gold-2)}
+  .store-btn{display:inline-flex;align-items:center;gap:6px;background:var(--clay);color:#fff;font-weight:600;font-size:13px;padding:7px 16px;border-radius:4px;cursor:pointer;border:none;transition:.15s;margin-top:8px}
+  .store-btn:hover{background:var(--clay-2);transform:translateY(-1px)}
+
   .section-title{font-size:18px;font-weight:700;letter-spacing:-.2px;margin:34px 0 16px;display:flex;align-items:center;gap:9px}
   .section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
 
@@ -600,6 +617,7 @@
     </div>
 
     <div class="side-foot">
+      <div class="side-foot-link" id="navStore" onclick="showStore()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>电子书商城</div>
       <div class="side-foot-link" id="navShelf" onclick="showShelf()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5z"/><path d="M3 9.2h18"/><path d="M7 6.5v.01M10 6.5v.01M13 6.5v.01M16 6.5v.01"/><path d="M6.5 15h4M6.5 18h4"/></svg>我的书架<span class="count" id="shelfCount">0</span></div>
     </div>
   </aside>
@@ -671,8 +689,8 @@
         <p class="wl-lead">AI 帮你提炼核心理论，再通过交互式提问检验你是否真的吃透了这本书。<br>不是「读过」，是「掌握」。</p>
         <div class="wl-cta">
           <button class="wl-btn primary" onclick="openUpload()"><span class="plus" style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 上传电子书</button>
+          <button class="wl-btn ghost" onclick="showStore()">电子书商城</button>
           <button class="wl-btn ghost" onclick="showShelf()">我的书架</button>
-          <button class="wl-btn ghost" onclick="openBook('思考，快与慢')">体验演示书</button>
         </div>
       </div>
 
@@ -703,6 +721,17 @@
       </div>
       <div class="section-title"><span class="dot"></span>读过的书</div>
       <div class="book-grid" id="shelfGrid">
+      </div>
+    </main>
+
+    <!-- 电子书商城 -->
+    <main id="view-store" class="container hidden">
+      <div class="store-hero">
+        <h1>电子书商城</h1>
+        <p>免费电子书，直接精读，不消耗 AI Token。<span class="quote-src">—— 先体验，再上传自己的书</span></p>
+      </div>
+      <div class="section-title"><span class="dot"></span>免费电子书</div>
+      <div class="store-grid" id="storeGrid">
       </div>
     </main>
 
@@ -2447,7 +2476,7 @@ function shelveCurrentBook(){
 
 /* ================= 交互：视图切换 ================= */
 function hideAllViews(){
-  ['view-welcome','view-shelf','view-book','view-finished'].forEach(id=>{
+  ['view-welcome','view-shelf','view-store','view-book','view-finished'].forEach(id=>{
     document.getElementById(id).classList.add('hidden');
   });
 }
@@ -2471,6 +2500,14 @@ function showShelf(){
   document.getElementById('view-shelf').classList.remove('hidden');
   setActiveBookEl(null);
   setActiveNav('navShelf');
+  window.scrollTo(0,0);
+}
+function showStore(){
+  hideAllViews();
+  document.getElementById('view-store').classList.remove('hidden');
+  setActiveBookEl(null);
+  setActiveNav('navStore');
+  renderStore();
   window.scrollTo(0,0);
 }
 function openBook(title){
@@ -2606,6 +2643,58 @@ function goToLogic(){
   switchMain('analysis');
   switchSub('logic');
   window.scrollTo(0,0);
+}
+
+/* ================= 电子书商城 ================= */
+const STORE_BOOKS = [
+  {
+    title: '思考，快与慢',
+    author: '丹尼尔·卡尼曼',
+    desc: '诺贝尔经济学奖得主卡尼曼以「双系统」模型为核心，系统梳理了人类判断与决策中的系统性偏差，是行为经济学的奠基之作。',
+    gradient: 'linear-gradient(150deg,#C0603C,#8F3F26)',
+    initial: '思',
+    tag: '认知心理学 · 行为经济学',
+    free: true
+  },
+  {
+    title: '影响力',
+    author: '罗伯特·西奥迪尼',
+    desc: '社会心理学经典，揭示「说服」背后的六大原理：互惠、承诺一致、社会认同、喜好、权威、稀缺。理解这些，你就看懂了日常生活中的「顺从陷阱」。',
+    gradient: 'linear-gradient(150deg,#2F5D50,#1C3B33)',
+    initial: '影',
+    tag: '社会心理学 · 说服科学',
+    free: true
+  }
+];
+
+function renderStore(){
+  const grid = document.getElementById('storeGrid');
+  if(!grid || grid.children.length > 0) return;
+  STORE_BOOKS.forEach(book => {
+    const card = document.createElement('div');
+    card.className = 'store-card';
+    card.innerHTML = `
+      <div class="store-cover" style="background:${book.gradient}">${book.initial}</div>
+      <div class="store-info">
+        <h3>${book.title}</h3>
+        <div class="author">${book.author}</div>
+        <div class="desc">${book.desc}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="store-tag free">免费</span>
+          <span class="store-tag">${book.tag}</span>
+        </div>
+        <button class="store-btn" onclick="openStoreBook('${book.title}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>开始精读</button>
+      </div>`;
+    card.addEventListener('click', ()=>{
+      openStoreBook(book.title);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function openStoreBook(title){
+  // 从商城打开的书直接进入精读，不消耗 token
+  openBook(title);
 }
 
 /* ================= 自测评估 ================= */
