@@ -597,6 +597,67 @@
   .side-foot-link .count{margin-left:auto;font-size:11px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.6);padding:1px 8px;border-radius:10px}
   .side-foot-link.active .count{background:var(--gold);color:#3A2E0C}
 
+  /* ===== 赤牙书屋 ===== */
+  .study-hero{display:flex;gap:28px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:20px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative}
+  .study-hero::before{content:'';position:absolute;top:0;left:28px;right:28px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
+  .study-cover{width:90px;height:126px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:24px;box-shadow:0 2px 10px rgba(42,38,34,.14)}
+  .study-info{flex:1;min-width:0}
+  .study-kicker{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--clay-2);margin-bottom:6px;text-transform:uppercase}
+  .study-info h2{font-size:24px;font-weight:700;letter-spacing:-.4px;font-family:Georgia,'Songti SC','STSong',serif;margin-bottom:2px}
+  .study-info .author{font-size:13px;color:var(--ink-2);margin-bottom:10px}
+  .study-progress{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+  .study-bar{flex:1;max-width:200px;height:6px;background:var(--sunken);border-radius:4px;overflow:hidden}
+  .study-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--clay),var(--clay-2));transition:width .4s}
+  .study-pct{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+  .study-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .study-btn{display:inline-flex;align-items:center;gap:6px;background:var(--clay);color:#fff;font-weight:600;font-size:13px;padding:8px 18px;border-radius:4px;cursor:pointer;border:none;transition:.15s}
+  .study-btn:hover{background:var(--clay-2);transform:translateY(-1px)}
+  .study-btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
+  .study-btn.ghost:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg);transform:none}
+  /* 书屋内容区：双栏布局 */
+  .study-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .study-panel{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:22px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
+  .study-panel h3{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-family:Georgia,'Songti SC','STSong',serif}
+  .study-panel h3 .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--clay-bg);color:var(--clay-2);margin-left:auto}
+  .study-panel h3 .badge.gold{background:var(--gold-bg);color:var(--gold-2)}
+  .study-panel h3 .badge.pine{background:var(--pine-bg);color:var(--pine)}
+  /* 笔记列表 */
+  .note-list{display:flex;flex-direction:column;gap:10px}
+  .note-item{padding:12px 14px;background:var(--sunken);border-radius:4px;cursor:pointer;transition:.15s}
+  .note-item:hover{background:var(--clay-bg)}
+  .note-item .note-date{font-size:11px;color:var(--ink-3);margin-bottom:4px}
+  .note-item .note-text{font-size:13px;color:var(--ink);line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .note-item .note-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);margin-top:6px}
+  .note-empty{font-size:13px;color:var(--ink-3);padding:20px 0;text-align:center;line-height:1.8}
+  .note-empty .plus{font-size:28px;display:block;margin-bottom:8px;color:var(--line-2)}
+  /* 日记列表 */
+  .diary-list{display:flex;flex-direction:column;gap:10px}
+  .diary-item{padding:12px 14px;background:var(--sunken);border-radius:4px;cursor:pointer;transition:.15s}
+  .diary-item:hover{background:var(--pine-bg)}
+  .diary-item .diary-date{font-size:11px;color:var(--ink-3);margin-bottom:4px}
+  .diary-item .diary-text{font-size:13px;color:var(--ink);line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .diary-empty{font-size:13px;color:var(--ink-3);padding:20px 0;text-align:center;line-height:1.8}
+  .diary-empty .plus{font-size:28px;display:block;margin-bottom:8px;color:var(--line-2)}
+  /* 写笔记/日记弹窗 */
+  .write-modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center}
+  .write-mask{position:absolute;inset:0;background:rgba(42,33,26,.5);backdrop-filter:blur(2px)}
+  .write-box{position:relative;background:var(--card);border-radius:4px;width:520px;max-width:90vw;max-height:80vh;overflow-y:auto;padding:28px;box-shadow:0 8px 32px rgba(42,38,34,.18)}
+  .write-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .write-head h3{font-size:18px;font-weight:700;font-family:Georgia,'Songti SC','STSong',serif}
+  .write-close{width:32px;height:32px;border:none;background:transparent;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--ink-2);transition:.15s}
+  .write-close:hover{background:var(--sunken);color:var(--ink)}
+  .write-type{display:flex;gap:8px;margin-bottom:16px}
+  .write-type-btn{padding:6px 14px;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink-2);transition:.15s}
+  .write-type-btn.active{background:var(--clay);color:#fff;border-color:var(--clay)}
+  .write-textarea{width:100%;min-height:160px;border:1px solid var(--line);border-radius:4px;padding:14px;font-family:inherit;font-size:14px;line-height:1.8;color:var(--ink);resize:vertical;background:var(--card);transition:.15s}
+  .write-textarea:focus{outline:none;border-color:var(--clay);box-shadow:0 0 0 2px rgba(192,96,60,.12)}
+  .write-submit{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+  .write-submit button{padding:8px 20px;border-radius:4px;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:.15s}
+  .write-submit .btn-cancel{background:var(--sunken);color:var(--ink-2)}
+  .write-submit .btn-cancel:hover{background:var(--line);color:var(--ink)}
+  .write-submit .btn-save{background:var(--clay);color:#fff}
+  .write-submit .btn-save:hover{background:var(--clay-2)}
+
   /* ===== 已读完面板 ===== */
   .finished-panel{max-width:680px}
   .finished-head{display:flex;gap:22px;align-items:center;margin-bottom:20px}
@@ -624,7 +685,7 @@
 
     <div class="side-group">
       <div class="side-group-title"><span class="dot"></span>正在精读</div>
-      <div class="side-book active" id="sideBookReading" onclick="openBook()">
+      <div class="side-book active" id="sideBookReading" onclick="showStudy()">
         <div class="side-cover" id="sideCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
         <div>
           <div class="side-name" id="sideBookName">思考，快与慢</div>
@@ -636,6 +697,7 @@
     </div>
 
     <div class="side-foot">
+      <div class="side-foot-link" id="navStudy" onclick="showStudy()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg>赤牙书屋</div>
       <div class="side-foot-link" id="navStore" onclick="showStore()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16l-1.5 12H5.5L4 7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/><circle cx="10" cy="13" r="1.5" fill="currentColor" opacity=".5"/><circle cx="14" cy="13" r="1.5" fill="currentColor" opacity=".5"/></svg>电子书商城</div>
       <div class="side-foot-link" id="navShelf" onclick="showShelf()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="17" x2="11" y2="17"/></svg>我的书架<span class="count" id="shelfCount">0</span></div>
     </div>
@@ -741,6 +803,74 @@
         </div>
       </div>
     </main>
+
+    <!-- 赤牙书屋：沉浸式阅读空间 -->
+    <main id="view-study" class="container hidden">
+      <!-- 当前正在精读的书 -->
+      <div class="study-hero">
+        <div class="study-cover" id="studyCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
+        <div class="study-info">
+          <div class="study-kicker">赤牙书屋</div>
+          <h2 id="studyTitle">思考，快与慢</h2>
+          <div class="author" id="studyAuthor">丹尼尔·卡尼曼</div>
+          <div class="study-progress">
+            <div class="study-bar"><div class="study-fill" id="studyFill" style="width:62%"></div></div>
+            <span class="study-pct" id="studyPct">掌握度 62%</span>
+          </div>
+          <div class="study-actions">
+            <button class="study-btn" onclick="openBook()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>进入精读</button>
+            <button class="study-btn ghost" onclick="shelveCurrentBook()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg>放入书架</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 双栏布局：笔记 + 日记 -->
+      <div class="study-layout">
+        <!-- 左侧：读书笔记 -->
+        <div class="study-panel">
+          <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>读书笔记<span class="badge gold" id="noteCount">0 条</span></h3>
+          <div class="note-list" id="noteList">
+            <div class="note-empty" id="noteEmpty">
+              <span class="plus">✎</span>
+              还没有笔记<br>记录你的思考和感悟
+            </div>
+          </div>
+          <button class="study-btn" onclick="openWriteModal('note')" style="margin-top:14px;width:100%;justify-content:center"><span style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 写笔记</button>
+        </div>
+
+        <!-- 右侧：阅读日记 -->
+        <div class="study-panel">
+          <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>阅读日记<span class="badge pine" id="diaryCount">0 篇</span></h3>
+          <div class="diary-list" id="diaryList">
+            <div class="diary-empty" id="diaryEmpty">
+              <span class="plus">📖</span>
+              还没有日记<br>记录你的阅读旅程
+            </div>
+          </div>
+          <button class="study-btn" onclick="openWriteModal('diary')" style="margin-top:14px;width:100%;justify-content:center"><span style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 写日记</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 写笔记/日记弹窗 -->
+    <div id="writeModal" class="write-modal hidden">
+      <div class="write-mask" onclick="closeWriteModal()"></div>
+      <div class="write-box">
+        <div class="write-head">
+          <h3 id="writeTitle">写笔记</h3>
+          <button class="write-close" onclick="closeWriteModal()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="write-type">
+          <button class="write-type-btn active" id="writeTypeNote" onclick="switchWriteType('note')">📝 读书笔记</button>
+          <button class="write-type-btn" id="writeTypeDiary" onclick="switchWriteType('diary')">📖 阅读日记</button>
+        </div>
+        <textarea class="write-textarea" id="writeContent" placeholder="写下你的想法…"></textarea>
+        <div class="write-submit">
+          <button class="btn-cancel" onclick="closeWriteModal()">取消</button>
+          <button class="btn-save" onclick="saveWrite()">保存</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 书架页 -->
     <main id="view-shelf" class="container hidden">
@@ -2514,7 +2644,7 @@ function shelveCurrentBook(){
 
 /* ================= 交互：视图切换 ================= */
 function hideAllViews(){
-  ['view-welcome','view-shelf','view-store','view-book','view-finished'].forEach(id=>{
+  ['view-welcome','view-shelf','view-store','view-study','view-book','view-finished'].forEach(id=>{
     document.getElementById(id).classList.add('hidden');
   });
 }
@@ -2550,6 +2680,115 @@ function showStore(){
   setActiveNav('navStore');
   renderStore();
   window.scrollTo(0,0);
+}
+function showStudy(){
+  hideAllViews();
+  document.getElementById('view-study').classList.remove('hidden');
+  setActiveBookEl(null);
+  setActiveNav('navStudy');
+  updateStudyPanel();
+  window.scrollTo(0,0);
+}
+function updateStudyPanel(){
+  const title = currentReadingBook || READING_BOOK.title;
+  const isReading = title === READING_BOOK.title;
+  document.getElementById('studyTitle').textContent = title;
+  document.getElementById('studyAuthor').textContent = isReading ? '丹尼尔·卡尼曼' : '精读中';
+  if(isReading){
+    document.getElementById('studyCover').style.background = READING_BOOK.gradient;
+    document.getElementById('studyCover').textContent = READING_BOOK.initial;
+    document.getElementById('studyFill').style.width = '62%';
+    document.getElementById('studyPct').textContent = '掌握度 62%';
+  }else{
+    const gradients = ['linear-gradient(150deg,#C0603C,#8F3F26)','linear-gradient(150deg,#2F5D50,#1C3B33)','linear-gradient(150deg,#C9A227,#96741A)','linear-gradient(150deg,#5A4A3C,#2E251D)'];
+    const g = gradients[Math.floor(Math.random()*gradients.length)];
+    document.getElementById('studyCover').style.background = g;
+    document.getElementById('studyCover').textContent = title.charAt(0);
+    document.getElementById('studyFill').style.width = '0%';
+    document.getElementById('studyPct').textContent = '精读中';
+  }
+  renderNotes();
+  renderDiaries();
+}
+/* ================= 赤牙书屋：笔记与日记 ================= */
+let notes = JSON.parse(localStorage.getItem('chiya_notes') || '[]');
+let diaries = JSON.parse(localStorage.getItem('chiya_diaries') || '[]');
+let writeMode = 'note';
+function renderNotes(){
+  const list = document.getElementById('noteList');
+  const empty = document.getElementById('noteEmpty');
+  const count = document.getElementById('noteCount');
+  if(!list) return;
+  // 清除旧笔记项（保留空态占位）
+  list.querySelectorAll('.note-item').forEach(el=>el.remove());
+  if(notes.length === 0){
+    empty.classList.remove('hidden');
+    if(count) count.textContent = '0 条';
+    return;
+  }
+  empty.classList.add('hidden');
+  if(count) count.textContent = notes.length + ' 条';
+  notes.slice().reverse().forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'note-item';
+    el.innerHTML = `<div class="note-date">${n.date}</div><div class="note-text">${n.text}</div><span class="note-tag">${n.book}</span>`;
+    list.appendChild(el);
+  });
+}
+function renderDiaries(){
+  const list = document.getElementById('diaryList');
+  const empty = document.getElementById('diaryEmpty');
+  const count = document.getElementById('diaryCount');
+  if(!list) return;
+  list.querySelectorAll('.diary-item').forEach(el=>el.remove());
+  if(diaries.length === 0){
+    empty.classList.remove('hidden');
+    if(count) count.textContent = '0 篇';
+    return;
+  }
+  empty.classList.add('hidden');
+  if(count) count.textContent = diaries.length + ' 篇';
+  diaries.slice().reverse().forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'diary-item';
+    el.innerHTML = `<div class="diary-date">${d.date}</div><div class="diary-text">${d.text}</div>`;
+    list.appendChild(el);
+  });
+}
+function openWriteModal(type){
+  writeMode = type;
+  document.getElementById('writeTitle').textContent = type === 'note' ? '写笔记' : '写日记';
+  document.getElementById('writeContent').value = '';
+  document.getElementById('writeTypeNote').classList.toggle('active', type === 'note');
+  document.getElementById('writeTypeDiary').classList.toggle('active', type === 'diary');
+  document.getElementById('writeModal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('writeContent').focus(), 100);
+}
+function closeWriteModal(){
+  document.getElementById('writeModal').classList.add('hidden');
+}
+function switchWriteType(type){
+  writeMode = type;
+  document.getElementById('writeTitle').textContent = type === 'note' ? '写笔记' : '写日记';
+  document.getElementById('writeTypeNote').classList.toggle('active', type === 'note');
+  document.getElementById('writeTypeDiary').classList.toggle('active', type === 'diary');
+}
+function saveWrite(){
+  const text = document.getElementById('writeContent').value.trim();
+  if(!text){ alert('请写点什么'); return; }
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const book = currentReadingBook || READING_BOOK.title;
+  if(writeMode === 'note'){
+    notes.push({text, date: dateStr, book});
+    localStorage.setItem('chiya_notes', JSON.stringify(notes));
+    renderNotes();
+  }else{
+    diaries.push({text, date: dateStr});
+    localStorage.setItem('chiya_diaries', JSON.stringify(diaries));
+    renderDiaries();
+  }
+  closeWriteModal();
 }
 function openBook(title){
   hideAllViews();
