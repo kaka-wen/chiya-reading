@@ -574,21 +574,7 @@
   .side-group{margin-bottom:20px}
   .side-group-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.42);padding:0 10px;margin-bottom:8px;letter-spacing:1px;display:flex;align-items:center;gap:6px}
   .side-group-title .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block}
-  .side-book{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:4px;cursor:pointer;transition:.15s}
-  .side-book:hover{background:rgba(255,255,255,.07)}
-  .side-book.active{background:rgba(255,255,255,.10);box-shadow:inset 3px 0 0 var(--clay)}
-  .side-book.active .side-name{color:#fff}
-  .side-book.active .side-meta{color:rgba(255,255,255,.6)}
-  .side-book.shelved{opacity:.42;background:transparent;box-shadow:none}
-  .side-book.shelved:hover{opacity:.72;background:rgba(255,255,255,.05)}
-  .side-book.shelved .side-name{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.4)}
-  .side-shelved-tag{margin-left:auto;flex-shrink:0;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(255,255,255,.13);color:rgba(255,255,255,.7)}
-  .reading-empty{font-size:12px;color:rgba(255,255,255,.42);padding:9px 11px;border:1px dashed rgba(255,255,255,.16);border-radius:4px;cursor:pointer;transition:.15s;line-height:1.6}
-  .reading-empty:hover{border-color:rgba(255,255,255,.34);color:rgba(255,255,255,.72)}
-  .side-cover{width:34px;height:46px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.28)}
-  .side-name{font-size:14px;font-weight:600;line-height:1.3;color:rgba(255,255,255,.9)}
-  .side-meta{font-size:12px;color:rgba(255,255,255,.45);margin-top:1px}
-  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.10)}
+    .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.10)}
   .side-foot-link{font-size:13px;color:rgba(255,255,255,.72);padding:8px 10px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.15s}
   .side-foot-link:hover{background:rgba(255,255,255,.08);color:#fff}
   .side-foot-link.active{background:rgba(255,255,255,.12);color:#F0DFAE;font-weight:600}
@@ -598,6 +584,11 @@
   .side-foot-link.active .count{background:var(--gold);color:#3A2E0C}
 
   /* ===== 赤牙书屋 ===== */
+  .study-empty{text-align:center;padding:80px 24px 72px;background:var(--card);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative;overflow:hidden}
+  .study-empty::before{content:'';position:absolute;top:0;left:80px;right:80px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
+  .study-empty-mark{width:72px;height:72px;margin:0 auto 22px;border-radius:4px;background:linear-gradient(135deg,var(--clay),var(--clay-2));color:#FFF6EE;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;font-family:Georgia,'Songti SC',serif;box-shadow:0 4px 16px rgba(143,63,38,.24)}
+  .study-empty h2{font-size:24px;font-weight:700;letter-spacing:-.4px;font-family:Georgia,'Songti SC','STSong',serif;margin-bottom:12px}
+  .study-empty p{font-size:14.5px;color:var(--ink-2);line-height:1.9;max-width:420px;margin:0 auto 24px}
   .study-hero{display:flex;gap:28px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:20px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative}
   .study-hero::before{content:'';position:absolute;top:0;left:28px;right:28px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
   .study-cover{width:90px;height:126px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:24px;box-shadow:0 2px 10px rgba(42,38,34,.14)}
@@ -681,19 +672,6 @@
     <div class="side-logo" onclick="showWelcome()">
       <span class="brand-mark">赤</span>
       <span class="brand-name">赤牙<em> · AI阅读</em></span>
-    </div>
-
-    <div class="side-group">
-      <div class="side-group-title"><span class="dot"></span>正在精读</div>
-      <div class="side-book active" id="sideBookReading" onclick="showStudy()">
-        <div class="side-cover" id="sideCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
-        <div>
-          <div class="side-name" id="sideBookName">思考，快与慢</div>
-          <div class="side-meta" id="sideBookMeta">掌握度 62%</div>
-        </div>
-        <span class="side-shelved-tag hidden" id="shelvedTag">已入架</span>
-      </div>
-      <div class="reading-empty hidden" id="readingEmpty" onclick="showStore()">暂无正在精读的书 · 去商城选一本开始</div>
     </div>
 
     <div class="side-foot">
@@ -806,6 +784,21 @@
 
     <!-- 赤牙书屋：沉浸式阅读空间 -->
     <main id="view-study" class="container hidden">
+      <!-- 空态：没有正在精读的书 -->
+      <div id="studyEmpty" class="hidden">
+        <div class="study-empty">
+          <div class="study-empty-mark">书</div>
+          <h2>书屋里还没有正在读的书</h2>
+          <p>去电子书商城挑一本免费书，或上传你自己的电子书，开始一段安静的阅读。</p>
+          <div class="study-actions" style="justify-content:center">
+            <button class="study-btn" onclick="showStore()">去电子书商城</button>
+            <button class="study-btn ghost" onclick="openUpload()">上传电子书</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 有正在精读的书 -->
+      <div id="studyMain">
       <!-- 当前正在精读的书 -->
       <div class="study-hero">
         <div class="study-cover" id="studyCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
@@ -850,6 +843,7 @@
           <button class="study-btn" onclick="openWriteModal('diary')" style="margin-top:14px;width:100%;justify-content:center"><span style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 写日记</button>
         </div>
       </div>
+      </div><!-- /#studyMain -->
     </main>
 
     <!-- 写笔记/日记弹窗 -->
@@ -2609,15 +2603,7 @@ function shelveCurrentBook(){
     mastery: m.avg + '%', finished: finished, tested: m.tested, total: m.total
   }));
 
-  // 2) 侧边栏：正在精读 → 已入架，露出空态
-  const sb = document.getElementById('sideBookReading');
-  const label = finished ? '已读完 · 掌握度 ' + m.avg + '%'
-                         : '未读完 · 已评测 ' + m.tested + '/' + m.total;
-  sb.classList.remove('active');
-  sb.classList.add('shelved');
-  sb.querySelector('.side-meta').textContent = label;
-  document.getElementById('shelvedTag').classList.remove('hidden');
-  document.getElementById('readingEmpty').classList.remove('hidden');
+  // 2) 清除当前精读状态
   currentReadingBook = null;
 
   // 3) 两处按钮都切成已入架态
@@ -2648,10 +2634,6 @@ function hideAllViews(){
     document.getElementById(id).classList.add('hidden');
   });
 }
-function setActiveBookEl(el){
-  document.querySelectorAll('.side-book').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-}
 function setActiveNav(id){
   document.querySelectorAll('.side-foot-link').forEach(l=>l.classList.remove('active'));
   if(id){ const el=document.getElementById(id); if(el) el.classList.add('active'); }
@@ -2659,7 +2641,6 @@ function setActiveNav(id){
 function showWelcome(){
   hideAllViews();
   document.getElementById('view-welcome').classList.remove('hidden');
-  setActiveBookEl(null);
   setActiveNav(null);
   // 有正在精读的书 → 显示进度卡片；没有 → 隐藏
   const hasReading = !shelved && currentReadingBook !== null;
@@ -2669,14 +2650,12 @@ function showWelcome(){
 function showShelf(){
   hideAllViews();
   document.getElementById('view-shelf').classList.remove('hidden');
-  setActiveBookEl(null);
   setActiveNav('navShelf');
   window.scrollTo(0,0);
 }
 function showStore(){
   hideAllViews();
   document.getElementById('view-store').classList.remove('hidden');
-  setActiveBookEl(null);
   setActiveNav('navStore');
   renderStore();
   window.scrollTo(0,0);
@@ -2684,13 +2663,24 @@ function showStore(){
 function showStudy(){
   hideAllViews();
   document.getElementById('view-study').classList.remove('hidden');
-  setActiveBookEl(null);
   setActiveNav('navStudy');
   updateStudyPanel();
   window.scrollTo(0,0);
 }
 function updateStudyPanel(){
-  const title = currentReadingBook || READING_BOOK.title;
+  const emptyEl = document.getElementById('studyEmpty');
+  const mainEl = document.getElementById('studyMain');
+  // 没有正在精读的书 → 空态
+  if(!currentReadingBook){
+    if(emptyEl) emptyEl.classList.remove('hidden');
+    if(mainEl) mainEl.classList.add('hidden');
+    renderNotes();
+    renderDiaries();
+    return;
+  }
+  if(emptyEl) emptyEl.classList.add('hidden');
+  if(mainEl) mainEl.classList.remove('hidden');
+  const title = currentReadingBook;
   const isReading = title === READING_BOOK.title;
   document.getElementById('studyTitle').textContent = title;
   document.getElementById('studyAuthor').textContent = isReading ? '丹尼尔·卡尼曼' : '精读中';
@@ -2793,16 +2783,11 @@ function saveWrite(){
 function openBook(title){
   hideAllViews();
   document.getElementById('view-book').classList.remove('hidden');
-  const sb = document.getElementById('sideBookReading');
   // 仅当操作的是「思考，快与慢」时，重新精读 = 状态回退：从书架移除，回到「正在精读」
   const isReading = !title || title === READING_BOOK.title;
   if(shelved && isReading){
     removeFromShelf(READING_BOOK.title);
     shelved = false;
-    sb.classList.remove('shelved');
-    sb.querySelector('.side-meta').textContent = '掌握度 62%';
-    document.getElementById('shelvedTag').classList.add('hidden');
-    document.getElementById('readingEmpty').classList.add('hidden');
     // 两处按钮恢复
     const b1 = document.getElementById('btnShelve');
     if(b1){ b1.textContent = '<span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>放入书架'; b1.classList.remove('done'); }
@@ -2840,46 +2825,14 @@ function openBook(title){
     document.querySelector('.book-head-info .desc').textContent = '本书已上传至赤牙·AI阅读，你可以使用全部精读功能：查看全书思维导图、核心理论、逻辑链与案例，并通过 AI 提问评测掌握度。';
     document.querySelector('.book-head-info .tag-row').innerHTML = '<span class="tag">已上传</span>';
   }
-  // 更新「正在精读」状态
+  // 更新「正在精读」状态（赤牙书屋展示）
   currentReadingBook = title || READING_BOOK.title;
-  updateSidebarReading(currentReadingBook);
-  setActiveBookEl(sb);
+  updateStudyPanel();
   setActiveNav(null);
   window.scrollTo(0,0);
   saveState();
 }
 
-function updateSidebarReading(title){
-  const sb = document.getElementById('sideBookReading');
-  const empty = document.getElementById('readingEmpty');
-  if(!title){
-    sb.classList.add('hidden');
-    empty.classList.remove('hidden');
-    return;
-  }
-  sb.classList.remove('hidden');
-  empty.classList.add('hidden');
-  // 如果是演示书《思考，快与慢》，用预设数据
-  if(title === READING_BOOK.title){
-    document.getElementById('sideCover').style.background = READING_BOOK.gradient;
-    document.getElementById('sideCover').textContent = READING_BOOK.initial;
-    document.getElementById('sideBookName').textContent = READING_BOOK.title;
-    document.getElementById('sideBookMeta').textContent = '掌握度 62%';
-  }else{
-    // 上传的书或商城其他书
-    const gradients = [
-      'linear-gradient(150deg,#C0603C,#8F3F26)',
-      'linear-gradient(150deg,#2F5D50,#1C3B33)',
-      'linear-gradient(150deg,#C9A227,#96741A)',
-      'linear-gradient(150deg,#5A4A3C,#2E251D)'
-    ];
-    const g = gradients[Math.floor(Math.random()*gradients.length)];
-    document.getElementById('sideCover').style.background = g;
-    document.getElementById('sideCover').textContent = title.charAt(0);
-    document.getElementById('sideBookName').textContent = title;
-    document.getElementById('sideBookMeta').textContent = '精读中';
-  }
-}
 function openFinished(title, mastery, gradient, author, finished, tested, total){
   document.getElementById('finTitle').textContent = title;
   document.getElementById('finMastery').textContent = mastery;
@@ -2907,7 +2860,6 @@ function openFinished(title, mastery, gradient, author, finished, tested, total)
   }
   hideAllViews();
   document.getElementById('view-finished').classList.remove('hidden');
-  setActiveBookEl(null);
   setActiveNav('navShelf');
   window.scrollTo(0,0);
 }
@@ -3187,7 +3139,7 @@ function restoreShelf(shelfData){
 loadState();
 // 如果没有持久化的正在精读状态，默认设为《思考，快与慢》
 if(!currentReadingBook && !shelved) currentReadingBook = READING_BOOK.title;
-updateSidebarReading(currentReadingBook);
+updateStudyPanel();
 renderOverview();
 renderGraph();
 renderTheories();
