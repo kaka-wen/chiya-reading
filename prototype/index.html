@@ -629,8 +629,8 @@
     </div>
 
     <div class="side-foot">
-      <div class="side-foot-link" id="navStore" onclick="showStore()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>电子书商城</div>
-      <div class="side-foot-link" id="navShelf" onclick="showShelf()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5z"/><path d="M3 9.2h18"/><path d="M7 6.5v.01M10 6.5v.01M13 6.5v.01M16 6.5v.01"/><path d="M6.5 15h4M6.5 18h4"/></svg>我的书架<span class="count" id="shelfCount">0</span></div>
+      <div class="side-foot-link" id="navStore" onclick="showStore()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16l-1.5 12H5.5L4 7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/><circle cx="10" cy="13" r="1.5" fill="currentColor" opacity=".5"/><circle cx="14" cy="13" r="1.5" fill="currentColor" opacity=".5"/></svg>电子书商城</div>
+      <div class="side-foot-link" id="navShelf" onclick="showShelf()"><svg class="side-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="4" x2="8" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="8" y1="14" x2="12" y2="14"/><line x1="8" y1="17" x2="11" y2="17"/></svg>我的书架<span class="count" id="shelfCount">0</span></div>
     </div>
   </aside>
 
@@ -712,7 +712,7 @@
           <h1 class="wl-title">把「读书」变成「真掌握」</h1>
           <p class="wl-lead">AI 帮你提炼核心理论，再通过交互式提问检验你是否真的吃透了这本书。<br>不是「读过」，是「掌握」。</p>
           <div class="wl-cta">
-            <button class="wl-btn primary" onclick="showStore()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>选一本免费书开始</button>
+            <button class="wl-btn primary" onclick="showStore()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M4 7h16l-1.5 12H5.5L4 7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/><circle cx="10" cy="13" r="1.5" fill="currentColor" opacity=".5"/><circle cx="14" cy="13" r="1.5" fill="currentColor" opacity=".5"/></svg>选一本免费书开始</button>
             <button class="wl-btn ghost" onclick="openUpload()"><span class="plus" style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 上传自己的书</button>
           </div>
         </div>
@@ -2749,7 +2749,7 @@ function renderStore(){
           <span class="store-tag free">免费</span>
           <span class="store-tag">${book.tag}</span>
         </div>
-        <button class="store-btn" onclick="openStoreBook('${book.title}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>开始精读</button>
+        <button class="store-btn" onclick="openStoreBook('${book.title}')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-1.5 12H5.5L4 7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>开始精读</button>
       </div>`;
     card.addEventListener('click', ()=>{
       openStoreBook(book.title);
