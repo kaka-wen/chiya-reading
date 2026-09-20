@@ -1,0 +1,13 @@
+{
+  "name": "chiya-reading",
+  "version": "1.0.0",
+  "private": true,
+  "description": "赤牙·AI阅读 —— 部署入口（实际服务代码位于 server/）",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "npm --prefix server install",
+    "start": "node server/src/index.js"
+  }
+}
