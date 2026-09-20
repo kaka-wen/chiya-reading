@@ -593,36 +593,50 @@
   .study-btn:hover{background:var(--clay-2);transform:translateY(-1px)}
   .study-btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
   .study-btn.ghost:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg);transform:none}
-  /* 书屋内容区 */
-  .study-panel{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:24px;box-shadow:0 1px 4px rgba(42,38,34,.04);max-width:780px}
-  .study-panel h3{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;font-family:Georgia,'Songti SC','STSong',serif}
-  .study-panel h3 .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--clay-bg);color:var(--clay-2);margin-left:auto}
-  .study-panel h3 .badge.gold{background:var(--gold-bg);color:var(--gold-2)}
-  /* 笔记列表 */
-  .note-list{display:flex;flex-direction:column;gap:10px}
-  .note-item{padding:14px 16px;background:var(--sunken);border-radius:4px;transition:.15s}
-  .note-item .note-date{font-size:11px;color:var(--ink-3);margin-bottom:5px}
-  .note-item .note-text{font-size:13.5px;color:var(--ink);line-height:1.8;white-space:pre-wrap;word-break:break-word}
-  .note-item .note-tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);margin-top:8px}
-  .note-empty{font-size:13px;color:var(--ink-3);padding:28px 0;text-align:center;line-height:1.9}
-  .note-empty .plus{font-size:28px;display:block;margin-bottom:8px;color:var(--line-2)}
-  /* 写笔记弹窗 */
-  .write-modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center}
-  .write-mask{position:absolute;inset:0;background:rgba(42,33,26,.5);backdrop-filter:blur(2px)}
-  .write-box{position:relative;background:var(--card);border-radius:4px;width:520px;max-width:90vw;max-height:80vh;overflow-y:auto;padding:28px;box-shadow:0 8px 32px rgba(42,38,34,.18)}
-  .write-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .write-head h3{font-size:18px;font-weight:700;font-family:Georgia,'Songti SC','STSong',serif}
-  .write-close{width:32px;height:32px;border:none;background:transparent;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--ink-2);transition:.15s}
-  .write-close:hover{background:var(--sunken);color:var(--ink)}
-  .write-hint{font-size:12.5px;color:var(--ink-3);margin-bottom:14px;line-height:1.7}
-  .write-textarea{width:100%;min-height:170px;border:1px solid var(--line);border-radius:4px;padding:14px;font-family:inherit;font-size:14px;line-height:1.8;color:var(--ink);resize:vertical;background:var(--card);transition:.15s}
-  .write-textarea:focus{outline:none;border-color:var(--clay);box-shadow:0 0 0 2px rgba(192,96,60,.12)}
-  .write-submit{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
-  .write-submit button{padding:8px 20px;border-radius:4px;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:.15s}
-  .write-submit .btn-cancel{background:var(--sunken);color:var(--ink-2)}
-  .write-submit .btn-cancel:hover{background:var(--line);color:var(--ink)}
-  .write-submit .btn-save{background:var(--clay);color:#fff}
-  .write-submit .btn-save:hover{background:var(--clay-2)}
+  /* 书屋内容区：读书笔记入口模块 */
+  .note-entry{display:flex;align-items:center;gap:18px;width:100%;max-width:780px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:22px 24px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);font-family:inherit;position:relative;overflow:hidden}
+  .note-entry::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),var(--gold-line))}
+  .note-entry:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
+  .note-entry-ico{width:44px;height:44px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--gold-bg);color:var(--gold-2)}
+  .note-entry-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .note-entry-title{font-size:16px;font-weight:700;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif;display:flex;align-items:center;gap:10px}
+  .note-entry-count{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--clay-bg);color:var(--clay-2);font-family:-apple-system,'PingFang SC',sans-serif}
+  .note-entry-preview{font-size:13px;color:var(--ink-3);line-height:1.7;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .note-entry-arrow{flex-shrink:0;color:var(--line-2);transition:.18s}
+  .note-entry:hover .note-entry-arrow{color:var(--clay);transform:translateX(3px)}
+
+  /* ===== 读书笔记本：卡片网格 ===== */
+  .notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .note-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);min-height:150px;display:flex;flex-direction:column}
+  .note-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
+  .note-card .nc-date{font-size:11px;color:var(--ink-3);margin-bottom:8px}
+  .note-card .nc-text{font-size:13.5px;color:var(--ink);line-height:1.85;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+  .note-card .nc-book{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);margin-top:12px;align-self:flex-start}
+  .note-card.new{align-items:center;justify-content:center;border-style:dashed;border-color:var(--line-2);background:transparent;color:var(--ink-2);gap:8px;text-align:center}
+  .note-card.new:hover{border-color:var(--clay);background:var(--clay-bg);color:var(--clay-2)}
+  .note-card.new .nc-plus{font-size:26px;font-weight:300;line-height:1}
+  .note-card.new .nc-label{font-size:13px;font-weight:600}
+  .notes-empty{grid-column:1/-1;font-size:13px;color:var(--ink-3);line-height:1.9;padding:8px 0 4px}
+
+  /* ===== 笔记书写区：独立整页 ===== */
+  .editor{max-width:760px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:34px 38px 26px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative}
+  .editor::before{content:'';position:absolute;top:0;left:38px;right:38px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
+  .editor-head{margin-bottom:20px}
+  .editor-kicker{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--clay-2);text-transform:uppercase;margin-bottom:8px}
+  .editor-head h2{font-size:22px;font-weight:700;letter-spacing:-.3px;font-family:Georgia,'Songti SC','STSong',serif}
+  .editor-area{width:100%;min-height:340px;border:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0;font-family:Georgia,'Songti SC','STSong',serif;font-size:15.5px;line-height:2;color:var(--ink);resize:vertical;background:transparent;display:block}
+  .editor-area:focus{outline:none}
+  .editor-area::placeholder{color:var(--ink-3);font-family:-apple-system,'PingFang SC',sans-serif;font-size:14px;line-height:2}
+  .editor-foot{display:flex;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+  .editor-meta{font-size:12px;color:var(--ink-3);margin-right:auto}
+  .editor-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .editor-btn{padding:9px 20px;border-radius:4px;font-weight:600;font-size:13.5px;cursor:pointer;border:1px solid var(--line-2);background:transparent;color:var(--ink-2);transition:.15s;font-family:inherit}
+  .editor-btn:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg)}
+  .editor-btn.primary{background:var(--clay);border-color:var(--clay);color:#fff}
+  .editor-btn.primary:hover{background:var(--clay-2);border-color:var(--clay-2);color:#fff}
+  .editor-btn.danger{border-color:var(--line);color:var(--ink-3)}
+  .editor-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+  @media(max-width:760px){ .editor{padding:24px 20px 20px} .editor::before{left:20px;right:20px} }
 
   /* ===== 已读完面板 ===== */
   .finished-panel{max-width:680px}
@@ -776,36 +790,47 @@
         </div>
       </div>
 
-      <!-- 读书笔记 -->
-      <div class="study-panel">
-        <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>读书笔记<span class="badge gold" id="noteCount">0 条</span></h3>
-        <div class="note-list" id="noteList">
-          <div class="note-empty" id="noteEmpty">
-            <span class="plus">✎</span>
-            还没有笔记<br>记录你的思考和感悟
-          </div>
-        </div>
-        <button class="study-btn" onclick="openWriteModal()" style="margin-top:16px"><span style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 写笔记</button>
-      </div>
+      <!-- 读书笔记：入口模块 -->
+      <button class="note-entry" onclick="showNotes()">
+        <span class="note-entry-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
+        <span class="note-entry-main">
+          <span class="note-entry-title">读书笔记<span class="note-entry-count" id="noteCount">0 条</span></span>
+          <span class="note-entry-preview" id="notePreview">还没有笔记 · 点进来写下你的第一段思考</span>
+        </span>
+        <span class="note-entry-arrow"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </button>
       </div><!-- /#studyMain -->
     </main>
 
-    <!-- 写笔记弹窗 -->
-    <div id="writeModal" class="write-modal hidden">
-      <div class="write-mask" onclick="closeWriteModal()"></div>
-      <div class="write-box">
-        <div class="write-head">
-          <h3>写读书笔记</h3>
-          <button class="write-close" onclick="closeWriteModal()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <!-- 读书笔记本：卡片网格 -->
+    <main id="view-notes" class="container hidden">
+      <div class="back-link" onclick="showStudy()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>返回赤牙书屋</div>
+      <div class="hero" style="margin-bottom:22px">
+        <h1>读书笔记</h1>
+        <p id="notesSub">《思考，快与慢》· 共 0 条</p>
+      </div>
+      <div class="notes-grid" id="notesGrid"></div>
+    </main>
+
+    <!-- 笔记书写区：独立整页 -->
+    <main id="view-note" class="container hidden">
+      <div class="back-link" onclick="showNotes()"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>返回笔记列表</div>
+      <div class="editor">
+        <div class="editor-head">
+          <div class="editor-kicker" id="editorKicker">写读书笔记</div>
+          <h2 id="editorBook">《思考，快与慢》</h2>
         </div>
-        <div class="write-hint" id="writeHint">记录你对《思考，快与慢》的思考</div>
-        <textarea class="write-textarea" id="writeContent" placeholder="写下你的想法…"></textarea>
-        <div class="write-submit">
-          <button class="btn-cancel" onclick="closeWriteModal()">取消</button>
-          <button class="btn-save" onclick="saveWrite()">保存</button>
+        <textarea class="editor-area" id="editorArea" placeholder="在这里写下你的思考…&#10;&#10;可以是一句话，也可以是一整段推理。"></textarea>
+        <div class="editor-foot">
+          <span class="editor-meta" id="editorMeta"></span>
+          <div class="editor-actions">
+            <button class="editor-btn danger hidden" id="editorDelete" onclick="deleteCurrentNote()">删除</button>
+            <button class="editor-btn" onclick="showNotes()">取消</button>
+            <button class="editor-btn primary" onclick="saveCurrentNote()">保存笔记</button>
+          </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- 书架页 -->
     <main id="view-shelf" class="container hidden">
@@ -2571,7 +2596,7 @@ function shelveCurrentBook(){
 
 /* ================= 交互：视图切换 ================= */
 function hideAllViews(){
-  ['view-welcome','view-shelf','view-store','view-study','view-book','view-finished'].forEach(id=>{
+  ['view-welcome','view-shelf','view-store','view-study','view-notes','view-note','view-book','view-finished'].forEach(id=>{
     document.getElementById(id).classList.add('hidden');
   });
 }
@@ -2612,7 +2637,7 @@ function updateStudyPanel(){
   if(!currentReadingBook){
     if(emptyEl) emptyEl.classList.remove('hidden');
     if(mainEl) mainEl.classList.add('hidden');
-    renderNotes();
+    renderNoteEntry();
     return;
   }
   if(emptyEl) emptyEl.classList.add('hidden');
@@ -2634,51 +2659,140 @@ function updateStudyPanel(){
     document.getElementById('studyFill').style.width = '0%';
     document.getElementById('studyPct').textContent = '精读中';
   }
-  renderNotes();
+  renderNoteEntry();
 }
 /* ================= 赤牙书屋：读书笔记 ================= */
+/* 三层结构：书屋放「读书笔记」入口模块 → 点进笔记卡片网格 → 点某张卡进独立整页书写区。
+   笔记归属当前精读的书（book 字段）。 */
 let notes = JSON.parse(localStorage.getItem('chiya_notes') || '[]');
-function renderNotes(){
-  const list = document.getElementById('noteList');
-  const empty = document.getElementById('noteEmpty');
-  const count = document.getElementById('noteCount');
-  if(!list) return;
-  // 清除旧笔记项（保留空态占位）
-  list.querySelectorAll('.note-item').forEach(el=>el.remove());
-  if(notes.length === 0){
-    empty.classList.remove('hidden');
-    if(count) count.textContent = '0 条';
-    return;
-  }
-  empty.classList.add('hidden');
-  if(count) count.textContent = notes.length + ' 条';
-  notes.slice().reverse().forEach(n => {
-    const el = document.createElement('div');
-    el.className = 'note-item';
-    el.innerHTML = `<div class="note-date">${n.date}</div><div class="note-text">${n.text}</div><span class="note-tag">${n.book}</span>`;
-    list.appendChild(el);
-  });
-}
-function openWriteModal(){
-  document.getElementById('writeContent').value = '';
-  const hint = document.getElementById('writeHint');
-  if(hint) hint.textContent = '记录你对《' + (currentReadingBook || READING_BOOK.title) + '》的思考';
-  document.getElementById('writeModal').classList.remove('hidden');
-  setTimeout(()=>document.getElementById('writeContent').focus(), 100);
-}
-function closeWriteModal(){
-  document.getElementById('writeModal').classList.add('hidden');
-}
-function saveWrite(){
-  const text = document.getElementById('writeContent').value.trim();
-  if(!text){ alert('请写点什么'); return; }
-  const now = new Date();
-  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+let editingNoteId = null;   // null = 新建，否则为正在编辑的笔记 id
+
+function notesOfCurrentBook(){
   const book = currentReadingBook || READING_BOOK.title;
-  notes.push({text, date: dateStr, book});
+  return notes.filter(n => n.book === book);
+}
+function noteDateStr(){
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0')
+       + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* 书屋页：刷新入口模块（数量 + 最近一条预览） */
+function renderNoteEntry(){
+  const cnt = document.getElementById('noteCount');
+  const pv = document.getElementById('notePreview');
+  if(!cnt || !pv) return;
+  const list = notesOfCurrentBook();
+  cnt.textContent = list.length + ' 条';
+  if(list.length === 0){
+    pv.textContent = '还没有笔记 · 点进来写下你的第一段思考';
+  }else{
+    const latest = list[list.length - 1];
+    pv.textContent = latest.date + ' · ' + latest.text.replace(/\s+/g, ' ').slice(0, 60);
+  }
+}
+
+/* 笔记页：卡片网格 */
+function showNotes(){
+  hideAllViews();
+  document.getElementById('view-notes').classList.remove('hidden');
+  setActiveNav('navStudy');
+  renderNotesGrid();
+  window.scrollTo(0,0);
+}
+function renderNotesGrid(){
+  const grid = document.getElementById('notesGrid');
+  const sub = document.getElementById('notesSub');
+  if(!grid) return;
+  const book = currentReadingBook || READING_BOOK.title;
+  const list = notesOfCurrentBook().slice().reverse();  // 新的在前
+  if(sub) sub.textContent = '《' + book + '》· 共 ' + list.length + ' 条';
+  grid.innerHTML = '';
+  if(list.length === 0){
+    const hint = document.createElement('div');
+    hint.className = 'notes-empty';
+    hint.textContent = '还没有笔记。点下面的「新建笔记」，写下你读这本书时的第一段思考。';
+    grid.appendChild(hint);
+  }
+  list.forEach(n => {
+    const card = document.createElement('div');
+    card.className = 'note-card';
+    card.dataset.noteId = n.id;
+    card.innerHTML = `<div class="nc-date">${escapeHtml(n.date)}</div>`
+      + `<div class="nc-text">${escapeHtml(n.text)}</div>`
+      + (n.book ? `<span class="nc-book">${escapeHtml(n.book)}</span>` : '');
+    card.addEventListener('click', ()=> openNoteEditor(n.id));
+    grid.appendChild(card);
+  });
+  // 新建卡（始终在最后）
+  const add = document.createElement('div');
+  add.className = 'note-card new';
+  add.innerHTML = '<span class="nc-plus">＋</span><span class="nc-label">新建笔记</span>';
+  add.addEventListener('click', ()=> openNoteEditor(null));
+  grid.appendChild(add);
+}
+
+/* 书写区：独立整页 */
+function openNoteEditor(id){
+  editingNoteId = id;
+  hideAllViews();
+  document.getElementById('view-note').classList.remove('hidden');
+  setActiveNav('navStudy');
+  const book = currentReadingBook || READING_BOOK.title;
+  const area = document.getElementById('editorArea');
+  const kicker = document.getElementById('editorKicker');
+  const bookEl = document.getElementById('editorBook');
+  const meta = document.getElementById('editorMeta');
+  const del = document.getElementById('editorDelete');
+  bookEl.textContent = '《' + book + '》';
+  if(id === null){
+    kicker.textContent = '写读书笔记';
+    area.value = '';
+    meta.textContent = '写下此刻的想法，保存后会出现在笔记列表里';
+    del.classList.add('hidden');
+  }else{
+    const n = notes.find(x => x.id === id);
+    if(!n){ showNotes(); return; }
+    kicker.textContent = '编辑读书笔记';
+    area.value = n.text;
+    meta.textContent = '创建于 ' + n.date;
+    del.classList.remove('hidden');
+  }
+  window.scrollTo(0,0);
+  setTimeout(()=>area.focus(), 100);
+}
+function saveCurrentNote(){
+  const area = document.getElementById('editorArea');
+  const text = (area.value || '').trim();
+  if(!text){ alert('请写点什么再保存'); area.focus(); return; }
+  const book = currentReadingBook || READING_BOOK.title;
+  if(editingNoteId === null){
+    notes.push({ id: 'n' + Date.now() + Math.floor(Math.random()*1000), text, date: noteDateStr(), book });
+    toast('笔记已保存');
+  }else{
+    const n = notes.find(x => x.id === editingNoteId);
+    if(n){ n.text = text; n.date = noteDateStr(); }
+    toast('笔记已更新');
+  }
   localStorage.setItem('chiya_notes', JSON.stringify(notes));
-  renderNotes();
-  closeWriteModal();
+  renderNoteEntry();
+  editingNoteId = null;
+  showNotes();
+}
+function deleteCurrentNote(){
+  if(editingNoteId === null) return;
+  const n = notes.find(x => x.id === editingNoteId);
+  if(!n) { showNotes(); return; }
+  if(!confirm('确定删除这条笔记吗？删除后无法恢复。')) return;
+  notes = notes.filter(x => x.id !== editingNoteId);
+  localStorage.setItem('chiya_notes', JSON.stringify(notes));
+  renderNoteEntry();
+  editingNoteId = null;
+  toast('笔记已删除');
+  showNotes();
 }
 function openBook(title){
   hideAllViews();
