@@ -4,7 +4,7 @@
   "private": true,
   "description": "赤牙·AI阅读 —— 部署入口（实际服务代码位于 server/）",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "postinstall": "npm --prefix server install",
