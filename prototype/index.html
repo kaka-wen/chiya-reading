@@ -112,18 +112,6 @@
   .wl-feat-item p{font-size:13.5px;color:var(--ink-2);line-height:1.85}
   @media (max-width:760px){ .wl-hero{padding:40px 12px 32px} .wl-title{font-size:28px} .wl-feat{grid-template-columns:1fr;gap:20px} }
 
-  /* ===== 首页仪表盘：正在精读卡片 ===== */
-  .wl-reading-card{display:flex;gap:24px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:28px;margin:12px 0 28px;box-shadow:0 1px 4px rgba(42,38,34,.04);align-items:center}
-  .wl-reading-cover{width:80px;height:112px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:28px;box-shadow:0 2px 8px rgba(42,38,34,.12)}
-  .wl-reading-info{flex:1;min-width:0}
-  .wl-reading-label{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--clay-2);margin-bottom:6px;text-transform:uppercase}
-  .wl-reading-info h2{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:2px;font-family:Georgia,'Songti SC','STSong',serif}
-  .wl-reading-author{font-size:13px;color:var(--ink-2);margin-bottom:10px}
-  .wl-reading-progress{display:flex;align-items:center;gap:12px}
-  .wl-reading-bar{flex:1;height:6px;background:var(--sunken);border-radius:4px;overflow:hidden;max-width:200px}
-  .wl-reading-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--clay),var(--clay-2));transition:width .4s}
-  .wl-reading-pct{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
-
   /* ===== 电子书商城 ===== */
   .store-hero{margin:12px 0 28px}
   .store-hero h1{font-size:34px;font-weight:700;letter-spacing:-.8px;line-height:1.25;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif}
@@ -682,25 +670,9 @@
   </aside>
 
   <div class="main-area">
-    <!-- 首页：仪表盘 -->
+    <!-- 首页 -->
     <main id="view-welcome" class="container">
-      <!-- 当前正在精读（有书时显示） -->
-      <div id="welcomeReading" class="wl-reading-card hidden">
-        <div class="wl-reading-cover" id="wlReadingCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">
-          <span id="wlReadingInitial">思</span>
-        </div>
-        <div class="wl-reading-info">
-          <div class="wl-reading-label">正在精读</div>
-          <h2 id="wlReadingTitle">思考，快与慢</h2>
-          <div class="wl-reading-author" id="wlReadingAuthor">丹尼尔·卡尼曼</div>
-          <div class="wl-reading-progress">
-            <div class="wl-reading-bar"><div class="wl-reading-fill" id="wlReadingFill" style="width:62%"></div></div>
-            <span class="wl-reading-pct" id="wlReadingPct">掌握度 62%</span>
-          </div>
-          <button class="wl-btn" onclick="openBook()" style="margin-top:12px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>继续精读</button>
-        </div>
-      </div>
-      <!-- 欢迎页（始终显示） -->
+      <!-- 欢迎页 -->
       <div class="wl-hero">
           <div class="wl-illustration">
             <svg class="ill-book" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2642,9 +2614,6 @@ function showWelcome(){
   hideAllViews();
   document.getElementById('view-welcome').classList.remove('hidden');
   setActiveNav(null);
-  // 有正在精读的书 → 显示进度卡片；没有 → 隐藏
-  const hasReading = !shelved && currentReadingBook !== null;
-  document.getElementById('welcomeReading').classList.toggle('hidden', !hasReading);
   window.scrollTo(0,0);
 }
 function showShelf(){
