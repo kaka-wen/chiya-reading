@@ -112,6 +112,18 @@
   .wl-feat-item p{font-size:13.5px;color:var(--ink-2);line-height:1.85}
   @media (max-width:760px){ .wl-hero{padding:40px 12px 32px} .wl-title{font-size:28px} .wl-feat{grid-template-columns:1fr;gap:20px} }
 
+  /* ===== 首页仪表盘：正在精读卡片 ===== */
+  .wl-reading-card{display:flex;gap:24px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:28px;margin:12px 0 28px;box-shadow:0 1px 4px rgba(42,38,34,.04);align-items:center}
+  .wl-reading-cover{width:80px;height:112px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:28px;box-shadow:0 2px 8px rgba(42,38,34,.12)}
+  .wl-reading-info{flex:1;min-width:0}
+  .wl-reading-label{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--clay-2);margin-bottom:6px;text-transform:uppercase}
+  .wl-reading-info h2{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:2px;font-family:Georgia,'Songti SC','STSong',serif}
+  .wl-reading-author{font-size:13px;color:var(--ink-2);margin-bottom:10px}
+  .wl-reading-progress{display:flex;align-items:center;gap:12px}
+  .wl-reading-bar{flex:1;height:6px;background:var(--sunken);border-radius:4px;overflow:hidden;max-width:200px}
+  .wl-reading-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--clay),var(--clay-2));transition:width .4s}
+  .wl-reading-pct{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+
   /* ===== 电子书商城 ===== */
   .store-hero{margin:12px 0 28px}
   .store-hero h1{font-size:34px;font-weight:700;letter-spacing:-.8px;line-height:1.25;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif}
@@ -606,14 +618,14 @@
     <div class="side-group">
       <div class="side-group-title"><span class="dot"></span>正在精读</div>
       <div class="side-book active" id="sideBookReading" onclick="openBook()">
-        <div class="side-cover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
+        <div class="side-cover" id="sideCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">思</div>
         <div>
-          <div class="side-name">思考，快与慢</div>
-          <div class="side-meta">掌握度 62%</div>
+          <div class="side-name" id="sideBookName">思考，快与慢</div>
+          <div class="side-meta" id="sideBookMeta">掌握度 62%</div>
         </div>
         <span class="side-shelved-tag hidden" id="shelvedTag">已入架</span>
       </div>
-      <div class="reading-empty hidden" id="readingEmpty" onclick="showShelf()">暂无正在精读的书 · 去书架选一本重新开始</div>
+      <div class="reading-empty hidden" id="readingEmpty" onclick="showStore()">暂无正在精读的书 · 去商城选一本开始</div>
     </div>
 
     <div class="side-foot">
@@ -623,74 +635,86 @@
   </aside>
 
   <div class="main-area">
-    <!-- 欢迎页：图书馆入口感 -->
+    <!-- 首页：仪表盘 -->
     <main id="view-welcome" class="container">
-      <div class="wl-hero">
-        <!-- 装饰插图 -->
-        <div class="wl-illustration">
-          <!-- 翻开的书 -->
-          <svg class="ill-book" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 8C4 5.79086 5.79086 4 8 4H40V64H8C5.79086 64 4 62.2091 4 60V8Z" stroke="var(--clay)" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M40 4H72C74.2091 4 76 5.79086 76 8V60C76 62.2091 74.2091 64 72 64H40V4Z" stroke="var(--pine)" stroke-width="1.5" stroke-linejoin="round"/>
-            <line x1="40" y1="4" x2="40" y2="64" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="14" y1="16" x2="30" y2="16" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
-            <line x1="14" y1="24" x2="26" y2="24" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
-            <line x1="50" y1="16" x2="66" y2="16" stroke="var(--pine)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
-            <line x1="50" y1="24" x2="62" y2="24" stroke="var(--pine)" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
-          </svg>
-          <!-- 大脑/思维网络 -->
-          <svg class="ill-brain" viewBox="0 0 90 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="45" cy="40" r="18" stroke="var(--pine)" stroke-width="1.2" opacity=".7"/>
-            <circle cx="45" cy="40" r="10" stroke="var(--pine)" stroke-width="1" opacity=".5"/>
-            <circle cx="45" cy="40" r="4" fill="var(--pine)" opacity=".3"/>
-            <line x1="45" y1="22" x2="45" y2="12" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
-            <line x1="45" y1="58" x2="45" y2="68" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
-            <line x1="27" y1="40" x2="17" y2="40" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
-            <line x1="63" y1="40" x2="73" y2="40" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
-            <circle cx="45" cy="12" r="2.5" fill="var(--gold)" opacity=".4"/>
-            <circle cx="45" cy="68" r="2.5" fill="var(--gold)" opacity=".4"/>
-            <circle cx="17" cy="40" r="2.5" fill="var(--gold)" opacity=".4"/>
-            <circle cx="73" cy="40" r="2.5" fill="var(--gold)" opacity=".4"/>
-          </svg>
-          <!-- 抽象线条（知识连接） -->
-          <svg class="ill-lines" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 50 Q30 10 50 30 T90 20 T110 40" stroke="var(--clay)" stroke-width="1" stroke-linecap="round" opacity=".6"/>
-            <path d="M10 55 Q30 15 50 35 T90 25 T110 45" stroke="var(--pine)" stroke-width="1" stroke-linecap="round" opacity=".4"/>
-            <circle cx="10" cy="50" r="3" fill="var(--gold)" opacity=".5"/>
-            <circle cx="50" cy="30" r="2.5" fill="var(--gold)" opacity=".4"/>
-            <circle cx="90" cy="20" r="2" fill="var(--gold)" opacity=".3"/>
-            <circle cx="110" cy="40" r="3" fill="var(--gold)" opacity=".5"/>
-          </svg>
-          <!-- 散落圆点 -->
-          <svg class="ill-dots" viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="10" cy="10" r="2" fill="var(--clay)" opacity=".5"/>
-            <circle cx="30" cy="5" r="1.5" fill="var(--pine)" opacity=".4"/>
-            <circle cx="50" cy="12" r="2.5" fill="var(--gold)" opacity=".3"/>
-            <circle cx="70" cy="8" r="1.5" fill="var(--clay)" opacity=".4"/>
-            <circle cx="90" cy="15" r="2" fill="var(--pine)" opacity=".5"/>
-            <circle cx="20" cy="25" r="1.5" fill="var(--gold)" opacity=".3"/>
-            <circle cx="45" cy="28" r="2" fill="var(--clay)" opacity=".4"/>
-            <circle cx="75" cy="22" r="1.5" fill="var(--pine)" opacity=".3"/>
-            <circle cx="15" cy="40" r="2" fill="var(--gold)" opacity=".4"/>
-            <circle cx="60" cy="45" r="1.5" fill="var(--clay)" opacity=".3"/>
-            <circle cx="85" cy="38" r="2" fill="var(--pine)" opacity=".4"/>
-            <circle cx="40" cy="50" r="1.5" fill="var(--gold)" opacity=".3"/>
-          </svg>
-          <!-- 引号装饰 -->
-          <svg class="ill-quote" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M60 40 Q40 40 40 60 Q40 80 60 80" stroke="var(--clay)" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
-            <path d="M140 40 Q120 40 120 60 Q120 80 140 80" stroke="var(--pine)" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
-            <path d="M50 45 Q30 45 30 65 Q30 85 50 85" stroke="var(--clay)" stroke-width="1" stroke-linecap="round" opacity=".3"/>
-            <path d="M130 45 Q110 45 110 65 Q110 85 130 85" stroke="var(--pine)" stroke-width="1" stroke-linecap="round" opacity=".3"/>
-          </svg>
+      <!-- 当前正在精读 -->
+      <div id="welcomeReading" class="wl-reading-card">
+        <div class="wl-reading-cover" id="wlReadingCover" style="background:linear-gradient(150deg,#C0603C,#8F3F26)">
+          <span id="wlReadingInitial">思</span>
         </div>
-        <div class="wl-kicker">赤牙 · AI阅读</div>
-        <h1 class="wl-title">把「读书」变成「真掌握」</h1>
-        <p class="wl-lead">AI 帮你提炼核心理论，再通过交互式提问检验你是否真的吃透了这本书。<br>不是「读过」，是「掌握」。</p>
-        <div class="wl-cta">
-          <button class="wl-btn primary" onclick="openUpload()"><span class="plus" style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 上传电子书</button>
-          <button class="wl-btn ghost" onclick="showStore()">电子书商城</button>
-          <button class="wl-btn ghost" onclick="showShelf()">我的书架</button>
+        <div class="wl-reading-info">
+          <div class="wl-reading-label">正在精读</div>
+          <h2 id="wlReadingTitle">思考，快与慢</h2>
+          <div class="wl-reading-author" id="wlReadingAuthor">丹尼尔·卡尼曼</div>
+          <div class="wl-reading-progress">
+            <div class="wl-reading-bar"><div class="wl-reading-fill" id="wlReadingFill" style="width:62%"></div></div>
+            <span class="wl-reading-pct" id="wlReadingPct">掌握度 62%</span>
+          </div>
+          <button class="wl-btn" onclick="openBook()" style="margin-top:12px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>继续精读</button>
+        </div>
+      </div>
+      <!-- 没有正在精读的书时显示 -->
+      <div id="welcomeEmpty" class="hidden">
+        <div class="wl-hero">
+          <div class="wl-illustration">
+            <svg class="ill-book" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 8C4 5.79086 5.79086 4 8 4H40V64H8C5.79086 64 4 62.2091 4 60V8Z" stroke="var(--clay)" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M40 4H72C74.2091 4 76 5.79086 76 8V60C76 62.2091 74.2091 64 72 64H40V4Z" stroke="var(--pine)" stroke-width="1.5" stroke-linejoin="round"/>
+              <line x1="40" y1="4" x2="40" y2="64" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="14" y1="16" x2="30" y2="16" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+              <line x1="14" y1="24" x2="26" y2="24" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+              <line x1="50" y1="16" x2="66" y2="16" stroke="var(--pine)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+              <line x1="50" y1="24" x2="62" y2="24" stroke="var(--pine)" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+            </svg>
+            <svg class="ill-brain" viewBox="0 0 90 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="45" cy="40" r="18" stroke="var(--pine)" stroke-width="1.2" opacity=".7"/>
+              <circle cx="45" cy="40" r="10" stroke="var(--pine)" stroke-width="1" opacity=".5"/>
+              <circle cx="45" cy="40" r="4" fill="var(--pine)" opacity=".3"/>
+              <line x1="45" y1="22" x2="45" y2="12" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+              <line x1="45" y1="58" x2="45" y2="68" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+              <line x1="27" y1="40" x2="17" y2="40" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+              <line x1="63" y1="40" x2="73" y2="40" stroke="var(--clay)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+              <circle cx="45" cy="12" r="2.5" fill="var(--gold)" opacity=".4"/>
+              <circle cx="45" cy="68" r="2.5" fill="var(--gold)" opacity=".4"/>
+              <circle cx="17" cy="40" r="2.5" fill="var(--gold)" opacity=".4"/>
+              <circle cx="73" cy="40" r="2.5" fill="var(--gold)" opacity=".4"/>
+            </svg>
+            <svg class="ill-lines" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 50 Q30 10 50 30 T90 20 T110 40" stroke="var(--clay)" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+              <path d="M10 55 Q30 15 50 35 T90 25 T110 45" stroke="var(--pine)" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+              <circle cx="10" cy="50" r="3" fill="var(--gold)" opacity=".5"/>
+              <circle cx="50" cy="30" r="2.5" fill="var(--gold)" opacity=".4"/>
+              <circle cx="90" cy="20" r="2" fill="var(--gold)" opacity=".3"/>
+              <circle cx="110" cy="40" r="3" fill="var(--gold)" opacity=".5"/>
+            </svg>
+            <svg class="ill-dots" viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="10" cy="10" r="2" fill="var(--clay)" opacity=".5"/>
+              <circle cx="30" cy="5" r="1.5" fill="var(--pine)" opacity=".4"/>
+              <circle cx="50" cy="12" r="2.5" fill="var(--gold)" opacity=".3"/>
+              <circle cx="70" cy="8" r="1.5" fill="var(--clay)" opacity=".4"/>
+              <circle cx="90" cy="15" r="2" fill="var(--pine)" opacity=".5"/>
+              <circle cx="20" cy="25" r="1.5" fill="var(--gold)" opacity=".3"/>
+              <circle cx="45" cy="28" r="2" fill="var(--clay)" opacity=".4"/>
+              <circle cx="75" cy="22" r="1.5" fill="var(--pine)" opacity=".3"/>
+              <circle cx="15" cy="40" r="2" fill="var(--gold)" opacity=".4"/>
+              <circle cx="60" cy="45" r="1.5" fill="var(--clay)" opacity=".3"/>
+              <circle cx="85" cy="38" r="2" fill="var(--pine)" opacity=".4"/>
+              <circle cx="40" cy="50" r="1.5" fill="var(--gold)" opacity=".3"/>
+            </svg>
+            <svg class="ill-quote" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M60 40 Q40 40 40 60 Q40 80 60 80" stroke="var(--clay)" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+              <path d="M140 40 Q120 40 120 60 Q120 80 140 80" stroke="var(--pine)" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+              <path d="M50 45 Q30 45 30 65 Q30 85 50 85" stroke="var(--clay)" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+              <path d="M130 45 Q110 45 110 65 Q110 85 130 85" stroke="var(--pine)" stroke-width="1" stroke-linecap="round" opacity=".3"/>
+            </svg>
+          </div>
+          <div class="wl-kicker">赤牙 · AI阅读</div>
+          <h1 class="wl-title">把「读书」变成「真掌握」</h1>
+          <p class="wl-lead">AI 帮你提炼核心理论，再通过交互式提问检验你是否真的吃透了这本书。<br>不是「读过」，是「掌握」。</p>
+          <div class="wl-cta">
+            <button class="wl-btn primary" onclick="showStore()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>选一本免费书开始</button>
+            <button class="wl-btn ghost" onclick="openUpload()"><span class="plus" style="font-size:16px;font-weight:800;margin-right:4px">＋</span> 上传自己的书</button>
+          </div>
         </div>
       </div>
 
@@ -1377,6 +1401,7 @@ let justRead = false;     // 读完原文后再考的标志
 let started = false;      // 是否已开始评测
 let shelved = false;      // 当前精读的书是否已放入书架
 let shelvedAsFinished = false;  // 入架时是否已评测完成（决定回退时是否重置评测）
+let currentReadingBook = null;  // 当前正在精读的书名（null = 没有正在精读的书）
 const READING_BOOK = {title:'思考，快与慢', author:'丹尼尔·卡尼曼 · 认知心理学', authorShort:'丹尼尔·卡尼曼',
                       gradient:'linear-gradient(150deg,#C0603C,#8F3F26)', initial:'思'};
 
@@ -2451,6 +2476,7 @@ function shelveCurrentBook(){
   sb.querySelector('.side-meta').textContent = label;
   document.getElementById('shelvedTag').classList.remove('hidden');
   document.getElementById('readingEmpty').classList.remove('hidden');
+  currentReadingBook = null;
 
   // 3) 两处按钮都切成已入架态
   const b1 = document.getElementById('btnShelve');
@@ -2493,6 +2519,10 @@ function showWelcome(){
   document.getElementById('view-welcome').classList.remove('hidden');
   setActiveBookEl(null);
   setActiveNav(null);
+  // 有正在精读的书 → 显示卡片；没有 → 显示空态欢迎页
+  const hasReading = !shelved && currentReadingBook !== null;
+  document.getElementById('welcomeReading').classList.toggle('hidden', !hasReading);
+  document.getElementById('welcomeEmpty').classList.toggle('hidden', hasReading);
   window.scrollTo(0,0);
 }
 function showShelf(){
@@ -2560,10 +2590,45 @@ function openBook(title){
     document.querySelector('.book-head-info .desc').textContent = '本书已上传至赤牙·AI阅读，你可以使用全部精读功能：查看全书思维导图、核心理论、逻辑链与案例，并通过 AI 提问评测掌握度。';
     document.querySelector('.book-head-info .tag-row').innerHTML = '<span class="tag">已上传</span>';
   }
+  // 更新「正在精读」状态
+  currentReadingBook = title || READING_BOOK.title;
+  updateSidebarReading(currentReadingBook);
   setActiveBookEl(sb);
   setActiveNav(null);
   window.scrollTo(0,0);
   saveState();
+}
+
+function updateSidebarReading(title){
+  const sb = document.getElementById('sideBookReading');
+  const empty = document.getElementById('readingEmpty');
+  if(!title){
+    sb.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+  sb.classList.remove('hidden');
+  empty.classList.add('hidden');
+  // 如果是演示书《思考，快与慢》，用预设数据
+  if(title === READING_BOOK.title){
+    document.getElementById('sideCover').style.background = READING_BOOK.gradient;
+    document.getElementById('sideCover').textContent = READING_BOOK.initial;
+    document.getElementById('sideBookName').textContent = READING_BOOK.title;
+    document.getElementById('sideBookMeta').textContent = '掌握度 62%';
+  }else{
+    // 上传的书或商城其他书
+    const gradients = [
+      'linear-gradient(150deg,#C0603C,#8F3F26)',
+      'linear-gradient(150deg,#2F5D50,#1C3B33)',
+      'linear-gradient(150deg,#C9A227,#96741A)',
+      'linear-gradient(150deg,#5A4A3C,#2E251D)'
+    ];
+    const g = gradients[Math.floor(Math.random()*gradients.length)];
+    document.getElementById('sideCover').style.background = g;
+    document.getElementById('sideCover').textContent = title.charAt(0);
+    document.getElementById('sideBookName').textContent = title;
+    document.getElementById('sideBookMeta').textContent = '精读中';
+  }
 }
 function openFinished(title, mastery, gradient, author, finished, tested, total){
   document.getElementById('finTitle').textContent = title;
@@ -2587,6 +2652,7 @@ function openFinished(title, mastery, gradient, author, finished, tested, total)
     btn.onclick = function(){
       if(isReading) openBook(title);
       else openBook('思考，快与慢');
+      currentReadingBook = title;
     };
   }
   hideAllViews();
@@ -2781,7 +2847,8 @@ function saveState(){
       justRead: justRead,
       started: started,
       shelved: shelved,
-      shelvedAsFinished: shelvedAsFinished
+      shelvedAsFinished: shelvedAsFinished,
+      currentReadingBook: currentReadingBook
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch(e){ /* storage full or unavailable */ }
@@ -2800,6 +2867,7 @@ function loadState(){
     if(data.started !== undefined) started = data.started;
     if(data.shelved !== undefined) shelved = data.shelved;
     if(data.shelvedAsFinished !== undefined) shelvedAsFinished = data.shelvedAsFinished;
+    if(data.currentReadingBook !== undefined) currentReadingBook = data.currentReadingBook;
     if(data.shelf && data.shelf.length){
       restoreShelf(data.shelf);
     }
@@ -2867,6 +2935,9 @@ function restoreShelf(shelfData){
 /* ================= 初始化 ================= */
 // 先尝试加载持久化数据，再渲染
 loadState();
+// 如果没有持久化的正在精读状态，默认设为《思考，快与慢》
+if(!currentReadingBook && !shelved) currentReadingBook = READING_BOOK.title;
+updateSidebarReading(currentReadingBook);
 renderOverview();
 renderGraph();
 renderTheories();
