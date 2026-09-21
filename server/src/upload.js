@@ -147,8 +147,12 @@ async function parseBookAsync(bookId, filePath, title) {
             r.def || '', r.source || 'ai', r.pos || '', r.year || null);
         });
 
-        // 逻辑链
-        const chain = (result.chains || []).find(c => c.theory_name === t.name);
+        // 逻辑链：优先按理论名精确匹配；名字对不上时按顺序兜底。
+        // 只按名字匹配会让「AI 改写了理论名」的书静默丢掉全部逻辑链 ——
+        // 用户只会看到「有理论但没有验证依据」，无从判断是解析失败还是本来就没有。
+        const chainList = result.chains || [];
+        const chain = chainList.find(c => c.theory_name === t.name)
+          || (chainList.length === result.theories.length ? chainList[i] : null);
         if (chain) {
           const cid = uuidv4();
           insertChain.run(cid, bookId, tid, chain.title || `${t.name} · 验证逻辑链`);
