@@ -2,17 +2,24 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'chiya.db');
+/* 数据目录必须可被环境变量覆盖 —— 否则无法挂载持久化卷。
+   默认路径在容器文件系统内，而 Railway 容器是临时的：每次重新部署都会连同
+   SQLite 文件和已上传的电子书一起清空（表现为「上传的书部署后就没了」）。
+   线上应在 Railway 挂一个 Volume（如挂到 /data），并设置 DATA_DIR=/data。 */
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+const DB_PATH = path.join(DATA_DIR, 'chiya.db');
 
-// 确保 data 目录存在
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+// 确保数据目录存在
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const db = new Database(DB_PATH);
 
 // 开启 WAL 模式提升并发性能
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+
+console.log(`[db] 数据库文件: ${DB_PATH}`);
+console.log(`[db] 数据目录来源: ${process.env.DATA_DIR ? '环境变量 DATA_DIR' : '默认路径（容器临时盘，重新部署会清空！）'}`);
 
 // ==================== 建表 ====================
 db.exec(`

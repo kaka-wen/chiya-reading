@@ -8,8 +8,11 @@ const db = require('./db');
 const ai = require('./ai');
 
 // 配置文件上传
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+// 上传目录同样要可覆盖：线上需与数据库放在同一个持久化卷里，
+// 否则重新部署后书籍记录还在、但原始文件已丢失。
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+console.log(`[upload] 上传目录: ${UPLOAD_DIR}`);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
