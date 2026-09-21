@@ -200,15 +200,26 @@ async function extractText(filePath) {
   }
 
   if (ext === '.pdf') {
-    // 用 pdf.js 提取文本
-    // ⚠️ 提取失败时必须抛错，绝不能返回占位字符串 —— 占位串长度超过「有效文本」阈值，
-    //    会让整条流水线误判为成功：AI 拿占位串自然提炼不出任何理论，最终得到
-    //    status=parsed 但 theories=[] 的「假成功」，用户看到的是「上传成功却什么也没有」。
+    // 用 pdf.js 提取文本。
+    // ⚠️ pdf.js v4+ 有两条硬性要求，任何一条不满足都必然失败：
+    //   1) data 必须是 Uint8Array —— v6 的 getDataProp() 会**显式拒绝** Node 的 Buffer，
+    //      而 fs.readFileSync() 返回的正是 Buffer，所以直接传会抛
+    //      「Please provide binary data as `Uint8Array`, rather than `Buffer`」。
+    //      另外校验还要求 val.byteLength === val.buffer.byteLength，故用 new Uint8Array(buf) 整体拷贝最稳。
+    //   2) Node 环境必须用 legacy 构建 —— 主构建会崩在 `Promise.try is not a function`（Node 22 无此 API）。
+    //      用动态 import() 而非 require()，因为 require(ESM) 在 Node < 22.12 不可用。
+    // 还有一条：提取失败必须抛错，绝不能返回占位字符串 —— 占位串会通过「有效文本」检查，
+    //   让整条流水线误判成功（AI 拿占位串提炼不出理论 → status=parsed 但 theories=[] 的假成功）。
     let text = '';
     try {
-      const pdfjs = require('pdfjs-dist');
-      const data = fs.readFileSync(filePath);
-      const doc = await pdfjs.getDocument({ data, useSystemFonts: false }).promise;
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const data = new Uint8Array(fs.readFileSync(filePath));
+      const pkgDir = path.dirname(require.resolve('pdfjs-dist/package.json'));
+      const doc = await pdfjs.getDocument({
+        data,
+        // 不提供标准字体数据时，使用标准字体的 PDF 会提取不到文字（pdf.js 会告警）
+        standardFontDataUrl: path.join(pkgDir, 'standard_fonts/')
+      }).promise;
       const pages = Math.min(doc.numPages, 50);
       for (let i = 1; i <= pages; i++) {
         const page = await doc.getPage(i);
@@ -218,6 +229,7 @@ async function extractText(filePath) {
       if (text.replace(/\s/g, '').length < 200) {
         throw new Error('该 PDF 提取不到文字（共 ' + doc.numPages + ' 页，很可能是扫描版／图片型 PDF）。请改用带文字层的 PDF，或先做 OCR。');
       }
+      console.log(`[pdf] 提取成功：${doc.numPages} 页，${text.replace(/\s/g, '').length} 字`);
       return text;
     } catch (e) {
       // 区分「我们主动抛出的可读原因」与「pdf.js 内部错误」
