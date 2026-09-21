@@ -594,14 +594,17 @@
   .study-btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2)}
   .study-btn.ghost:hover{border-color:var(--clay);color:var(--clay-2);background:var(--clay-bg);transform:none}
   /* 书屋内容区：读书笔记入口模块 */
-  .note-entry{display:flex;align-items:center;gap:18px;width:100%;max-width:780px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:22px 24px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);font-family:inherit;position:relative;overflow:hidden}
+  /* 宽度必须与上方书籍卡（.study-hero）一致 —— 两者都撑满 .container 内容区（1040px）。
+     曾经给这里加过 max-width:780px，结果比书卡窄 260px、右侧空一截，看着"没对齐、不长不短"。
+     高度靠"图标 48 + 两行预览"撑到约 122px，比原来 92px 的单行条更有卡片分量。 */
+  .note-entry{display:flex;align-items:center;gap:20px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:24px 28px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);font-family:inherit;position:relative;overflow:hidden}
   .note-entry::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),var(--gold-line))}
   .note-entry:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
-  .note-entry-ico{width:44px;height:44px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--gold-bg);color:var(--gold-2)}
-  .note-entry-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .note-entry-ico{width:48px;height:48px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--gold-bg);color:var(--gold-2)}
+  .note-entry-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
   .note-entry-title{font-size:16px;font-weight:700;color:var(--ink);font-family:Georgia,'Songti SC','STSong',serif;display:flex;align-items:center;gap:10px}
   .note-entry-count{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--clay-bg);color:var(--clay-2);font-family:-apple-system,'PingFang SC',sans-serif}
-  .note-entry-preview{font-size:13px;color:var(--ink-3);line-height:1.7;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .note-entry-preview{font-size:13px;color:var(--ink-3);line-height:1.7;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
   .note-entry-arrow{flex-shrink:0;color:var(--line-2);transition:.18s}
   .note-entry:hover .note-entry-arrow{color:var(--clay);transform:translateX(3px)}
 
