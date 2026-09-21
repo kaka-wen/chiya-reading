@@ -476,6 +476,11 @@
   .status.read{background:var(--clay-bg);color:var(--clay)}
   .status.paused{background:var(--sunken);color:var(--ink-2)}
   .status.new{background:var(--clay-bg);color:var(--clay)}
+  /* 上传书籍的解析状态。刻意不复用 .read —— getShelfData 用 .read 判「已读完」，
+     复用会把「解析完成」误记成「读完了」。 */
+  .status.up-ok{background:var(--green-bg);color:var(--green)}
+  .status.up-pending{background:var(--yellow-bg);color:var(--yellow)}
+  .status.up-fail{background:var(--red-bg);color:var(--red)}
   /* ===== 全书思维导图 ===== */
   .map-panel{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px;box-shadow:0 1px 4px rgba(42,38,34,.04)}
   .map-toolbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
@@ -537,13 +542,21 @@
   .file-name{font-weight:700;font-size:14px;word-break:break-all}
   .file-size{font-size:12px;color:var(--ink-3);margin-top:2px}
   .stage{margin-bottom:14px}
-  .stage-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}
+  .stage-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px;gap:10px}
   .stage-name{font-weight:600}
-  .stage-pct{color:var(--ink-2);font-weight:700}
+  .stage-pct{color:var(--ink-2);font-weight:700;white-space:nowrap}
   .stage-bar{height:8px;background:var(--sunken);border-radius:5px;overflow:hidden}
   .stage-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--clay),var(--clay-2));transition:width .3s ease}
+  /* 解析中：条纹流动，明确表达「正在进行、还没完成」，避免用户把停滞误判为失败 */
+  .stage-fill.pulse{background:linear-gradient(90deg,var(--clay-bg) 0%,var(--clay) 50%,var(--clay-bg) 100%);background-size:220% 100%;animation:upPulse 1.5s linear infinite}
+  @keyframes upPulse{from{background-position:220% 0}to{background-position:-20% 0}}
+  .stage.ok .stage-fill{background:var(--green)}
+  .stage.fail .stage-fill{background:var(--red)}
+  .up-hint{font-size:12px;color:var(--ink-3);line-height:1.75;margin:-2px 0 14px;padding-left:1px}
   .done-badge{display:flex;align-items:center;gap:8px;color:var(--green);font-weight:700;font-size:14px;margin-bottom:14px}
-  .done-badge .tick{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .done-badge .tick{width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+  .fail-badge{display:flex;align-items:flex-start;gap:8px;color:var(--red);font-weight:600;font-size:13px;line-height:1.75;margin-bottom:14px}
+  .fail-badge .tick{width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:1px}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end}
   .modal-btn{border:none;padding:10px 20px;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
   .modal-btn.primary{background:var(--clay);color:#fff}
@@ -3211,11 +3224,19 @@ function resetUploadUI(){
   document.getElementById('uploadStage1').classList.remove('hidden');
   document.getElementById('uploadStage2').classList.add('hidden');
   document.getElementById('doneBadge').classList.add('hidden');
+  document.getElementById('failBadge').classList.add('hidden');
+  document.getElementById('btnPickAgain').classList.add('hidden');
   document.getElementById('fileInput').value = '';
-  document.getElementById('upBar').style.width = '0%';
-  document.getElementById('upPct').textContent = '0%';
-  document.getElementById('parseBar').style.width = '0%';
-  document.getElementById('parsePct').textContent = '0%';
+  // 复位两条进度、标签与状态类
+  const upBar=document.getElementById('upBar'), parseBar=document.getElementById('parseBar');
+  upBar.style.width='0%'; parseBar.style.width='0%';
+  upBar.classList.remove('pulse'); parseBar.classList.remove('pulse');
+  document.getElementById('stageUp').className='stage';
+  document.getElementById('stageParse').className='stage';
+  document.getElementById('upLabel').textContent='正在上传文件…';
+  document.getElementById('upPct').textContent='0%';
+  document.getElementById('parseLabel').textContent='AI 解析 · 提炼核心理论 / 逻辑链 / 案例';
+  document.getElementById('parsePct').textContent='等待中';
 }
 /* ================= 后端 API 配置 ================= */
 const API_BASE = window.location.origin;  // 同域部署，自动适配
@@ -3242,59 +3263,153 @@ async function apiDelete(path) {
   return res.json();
 }
 
+/* ================= 上传电子书 =================
+   改造要点（旧版会让人误判「上传失败」）：
+   旧版用 runProgress 做假进度：两条条各在 1.4s / 2.8s 内随机跑到 100%，
+   然后进入 20 秒~几分钟的真实解析，界面一动不动 —— 用户盯着 100% 空等，以为失败就重传。
+   现在：① 上传进度用 XHR 的真实 progress 事件；② 解析进度用渐近曲线最多到 95%，
+   只有服务端返回 parsed 才到 100%；③ 全程显示「已用 N 秒」+ 流动条纹；
+   ④ 区分 parsed / failed / 超时，不谎报成功；⑤ 成功后自动跳到「我的书架」，让用户立刻看到结果。 */
+const ART_EXTS = ['epub','pdf','mobi','txt'];
+const PARSE_TIMEOUT_MS = 5 * 60 * 1000;
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+/* 真实上传进度：fetch 拿不到 progress 事件，必须用 XHR */
+function uploadViaXhr(file, onProgress){
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('user_id', 'default');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API_BASE + '/api/upload');
+    xhr.timeout = PARSE_TIMEOUT_MS;
+    if(xhr.upload){
+      xhr.upload.onprogress = e => { if(e.lengthComputable) onProgress(e.loaded / e.total); };
+    }
+    xhr.onload = () => {
+      let data = null;
+      try { data = JSON.parse(xhr.responseText); } catch(_){}
+      if(xhr.status >= 200 && xhr.status < 300 && data && data.id) resolve(data);
+      else reject(new Error((data && data.error) || ('服务端返回 HTTP ' + xhr.status)));
+    };
+    xhr.onerror   = () => reject(new Error('网络错误，无法连接服务器'));
+    xhr.ontimeout = () => reject(new Error('上传超时'));
+    xhr.send(form);
+  });
+}
+
+function setUploadProgress(frac){
+  const p = Math.max(0, Math.min(100, frac * 100));
+  const bar = document.getElementById('upBar'), pct = document.getElementById('upPct');
+  if(bar) bar.style.width = p + '%';
+  if(pct) pct.textContent = Math.floor(p) + '%';
+}
+function setParseProgress(p, label){
+  const bar = document.getElementById('parseBar'), pct = document.getElementById('parsePct');
+  const lb = document.getElementById('parseLabel');
+  if(bar){
+    bar.style.width = p + '%';
+    bar.classList.toggle('pulse', p > 0 && p < 100);   // 未完成时条纹流动
+  }
+  if(pct) pct.textContent = Math.floor(p) + '%';
+  if(lb && label) lb.textContent = label;
+}
+
 function handleFiles(files){
   if(!files || files.length===0) return;
   const file = files[0];
   const ext = file.name.split('.').pop().toLowerCase();
-  if(!['epub','pdf','mobi','txt'].includes(ext)){
+  if(!ART_EXTS.includes(ext)){
     alert('仅支持 EPUB / PDF / MOBI / TXT 格式');
     return;
   }
+
   document.getElementById('uploadStage1').classList.add('hidden');
   document.getElementById('uploadStage2').classList.remove('hidden');
   document.getElementById('uploadFileName').textContent = file.name;
   document.getElementById('uploadFileSize').textContent = formatSize(file.size);
+  document.getElementById('doneBadge').classList.add('hidden');
+  document.getElementById('failBadge').classList.add('hidden');
+  document.getElementById('btnPickAgain').classList.add('hidden');
+  document.getElementById('upLabel').textContent = '正在上传文件…';
+  document.getElementById('stageUp').className = 'stage';
+  document.getElementById('stageParse').className = 'stage';
+  setUploadProgress(0);
+  setParseProgress(0, 'AI 解析 · 提炼核心理论 / 逻辑链 / 案例');
+  document.getElementById('parsePct').textContent = '等待中';
 
-  // 真正的后端上传
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('user_id', 'default');
+  const titleName = file.name.replace(/\.[^.]+$/, '');
+  uploadAndParse(file, ext, titleName);
+}
 
-  // 上传进度模拟（真实进度需要 XMLHttpRequest，这里简化）
-  runProgress('upBar','upPct', 1500, async ()=>{
+async function uploadAndParse(file, ext, titleName){
+  // ---- 1) 上传：真实进度 ----
+  let bookId = null;
+  try {
+    const data = await uploadViaXhr(file, setUploadProgress);
+    bookId = data.id;
+    setUploadProgress(1);
+    document.getElementById('upLabel').textContent = '上传完成';
+  } catch(e){
+    uploadFail('上传失败：' + e.message);
+    return;
+  }
+
+  // ---- 2) 轮询解析：渐近逼近 95%，服务端确认后才 100% ----
+  const started = Date.now();
+  let shown = 0;
+  for(;;){
+    await sleep(2000);
+    const elapsed = Date.now() - started;
+    // 45 秒约到 60%，2 分钟约到 92%，永不自行走到 100%
+    let p = 95 * (1 - Math.exp(-elapsed / 45000));
+    if(p < shown) p = shown; else shown = p;
+    setParseProgress(p, 'AI 正在解析 · 已用 ' + Math.round(elapsed / 1000) + ' 秒');
+
+    let st = null;
     try {
-      const res = await fetch(API_BASE + '/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '上传失败');
+      const r = await fetch(API_BASE + '/api/upload/' + bookId + '/status', { cache: 'no-store' });
+      if(r.ok) st = await r.json();
+    } catch(_){ /* 单次请求失败不中断，继续轮询 */ }
+    if(!st) continue;
 
-      // 轮询解析状态
-      const bookId = data.id;
-      runProgress('parseBar','parsePct', 3000, async ()=>{
-        // 等待解析完成
-        let status = 'uploaded';
-        let attempts = 0;
-        while (status === 'uploaded' || status === 'parsing') {
-          await new Promise(r => setTimeout(r, 2000));
-          try {
-            const statusRes = await fetch(API_BASE + '/api/upload/' + bookId + '/status');
-            const statusData = await statusRes.json();
-            status = statusData.status;
-          } catch(e) { break; }
-          attempts++;
-          if (attempts > 60) break; // 最多等 2 分钟
-        }
-
-        document.getElementById('doneBadge').classList.remove('hidden');
-        addToShelf(file.name.replace(/\.[^.]+$/,''), ext, null);
-      });
-    } catch(e) {
-      alert('上传失败: ' + e.message);
-      closeUpload();
+    if(st.status === 'parsed'){
+      setParseProgress(100, '解析完成');
+      document.getElementById('stageParse').className = 'stage ok';
+      document.getElementById('doneBadge').classList.remove('hidden');
+      addToShelf(titleName, ext, null, 'ok');
+      // 让用户立刻看到结果，而不是停在一个「完成」徽章上
+      setTimeout(()=>{ closeUpload(); showShelf(); }, 1100);
+      return;
     }
-  });
+    if(st.status === 'failed'){
+      setParseProgress(100, '解析失败');
+      document.getElementById('stageParse').className = 'stage fail';
+      document.getElementById('btnPickAgain').classList.remove('hidden');
+      uploadFail('解析失败：' + (st.parse_error || '服务端未能从该文件提取有效文本，可换一本试试'));
+      return;
+    }
+    if(elapsed > PARSE_TIMEOUT_MS){
+      setParseProgress(100, '仍在后台解析');
+      document.getElementById('stageParse').className = 'stage fail';
+      document.getElementById('btnPickAgain').classList.remove('hidden');
+      uploadFail('解析耗时超过 5 分钟，仍在服务器后台继续。可以关闭本窗口，稍后刷新「我的书架」查看。');
+      addToShelf(titleName, ext, null, 'pending');
+      return;
+    }
+  }
+}
+
+function uploadFail(msg){
+  const fb = document.getElementById('failBadge');
+  if(fb){
+    fb.classList.remove('hidden');
+    document.getElementById('failText').textContent = msg;
+  }
+  const bar = document.getElementById('parseBar');
+  if(bar){ bar.classList.remove('pulse'); bar.style.width = '100%'; }
+  document.getElementById('parsePct').textContent = '失败';
 }
 function extractPdfCover(file){
   if(typeof pdfjsLib === 'undefined') return Promise.resolve(null);
@@ -3316,27 +3431,14 @@ function extractPdfCover(file){
     })
     .catch(()=>null);
 }
-function runProgress(barId, pctId, duration, onDone){
-  const bar = document.getElementById(barId);
-  const pct = document.getElementById(pctId);
-  let p = 0;
-  const interval = setInterval(()=>{
-    p += Math.random()*18 + 4;
-    if(p >= 100){
-      p = 100; clearInterval(interval);
-      bar.style.width = '100%'; pct.textContent = '100%';
-      setTimeout(onDone, 250);
-    }else{
-      bar.style.width = p+'%'; pct.textContent = Math.floor(p)+'%';
-    }
-  }, 28);
-}
 function formatSize(bytes){
   if(!bytes) return '未知大小';
   if(bytes < 1024*1024) return (bytes/1024).toFixed(0)+' KB';
   return (bytes/1024/1024).toFixed(1)+' MB';
 }
-function addToShelf(name, ext, cover){
+/* 上传成功的书入架。state 反映真实解析状态，不一律写成「已上传」——
+   否则解析失败/仍在解析的书会被当成可用，用户点进去看到的是演示内容，又以为上传没成功。 */
+function addToShelf(name, ext, cover, state){
   const grid = document.getElementById('shelfGrid');
   const gradients = [
     'linear-gradient(150deg,#C0603C,#8F3F26)',
@@ -3349,23 +3451,28 @@ function addToShelf(name, ext, cover){
   const coverInner = cover
     ? `<img class="cover-img" src="${cover}" alt="">`
     : `<div class="cover-title">${displayName}</div><div class="cover-author">${ext.toUpperCase()} · 已上传</div>`;
+  const st = state || 'ok';
+  const statusHtml = st === 'ok'
+    ? `<div class="status up-ok"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>已上传 · 解析完成</div>`
+    : st === 'pending'
+    ? `<div class="status up-pending"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>已上传 · 后台解析中</div>`
+    : `<div class="status up-fail"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>已上传 · 解析失败</div>`;
   const card = document.createElement('div');
-  card.className = 'book-card';
+  card.className = 'book-card just-added';
+  card.dataset.bookId = name;
   card.innerHTML = `
+    <div class="shelf-new-tag">刚上传</div>
     <div class="cover" style="background:${g}">
       ${coverInner}
     </div>
     <h3>${displayName}</h3>
     <div class="meta">${ext.toUpperCase()} · 已上传</div>
-    <div class="status new"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></span>已上传 · 开始精读</div>
+    ${statusHtml}
     <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn-unshelve" title="开始精读本书" onclick="unshelveFromCard('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>开始精读</button>
-      <button class="btn-unshelve btn-remove" title="从书架移除" onclick="removeFromCard('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>移除</button>
+      <button class="btn-unshelve" title="从书架移除" onclick="removeFromCard('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>移除</button>
     </div>`;
-  card.addEventListener('click', ()=>{
-    openBook(name);
-  });
   grid.prepend(card);
+  setTimeout(()=>card.classList.remove('just-added'), 3600);
   const cnt = document.getElementById('shelfCount');
   if(cnt) cnt.textContent = grid.children.length;
   saveState();
@@ -3400,7 +3507,7 @@ function addToShelf(name, ext, cover){
       <input type="file" id="fileInput" accept=".epub,.pdf,.mobi,.txt" hidden onchange="handleFiles(this.files)">
     </div>
 
-    <!-- 阶段2：上传 + 解析进度 -->
+    <!-- 阶段2：上传 + 解析进度（进度全部由真实事件驱动，不提前跑到 100%） -->
     <div id="uploadStage2" class="hidden">
       <div class="file-box">
         <div class="file-icon">📕</div>
@@ -3409,17 +3516,20 @@ function addToShelf(name, ext, cover){
           <div class="file-size" id="uploadFileSize">1.2 MB</div>
         </div>
       </div>
-      <div class="stage">
-        <div class="stage-top"><span class="stage-name">上传中</span><span class="stage-pct" id="upPct">0%</span></div>
+      <div class="stage" id="stageUp">
+        <div class="stage-top"><span class="stage-name" id="upLabel">正在上传文件…</span><span class="stage-pct" id="upPct">0%</span></div>
         <div class="stage-bar"><div class="stage-fill" id="upBar" style="width:0%"></div></div>
       </div>
-      <div class="stage">
-        <div class="stage-top"><span class="stage-name">AI 解析中 · 提炼核心理论 / 逻辑链 / 案例</span><span class="stage-pct" id="parsePct">0%</span></div>
+      <div class="stage" id="stageParse">
+        <div class="stage-top"><span class="stage-name" id="parseLabel">AI 解析 · 提炼核心理论 / 逻辑链 / 案例</span><span class="stage-pct" id="parsePct">等待中</span></div>
         <div class="stage-bar"><div class="stage-fill" id="parseBar" style="width:0%"></div></div>
       </div>
-      <div class="done-badge hidden" id="doneBadge"><span class="tick">✓</span> 解析完成，已加入书架</div>
+      <div class="up-hint" id="upHint">解析由 AI 完成，通常需要 20–60 秒（长书更久）。请保持本窗口打开，结束后会直接带你去看结果。</div>
+      <div class="done-badge hidden" id="doneBadge"><span class="tick">✓</span><span id="doneText">解析完成，已加入「我的书架」</span></div>
+      <div class="fail-badge hidden" id="failBadge"><span class="tick">!</span><span id="failText">解析失败</span></div>
       <div class="modal-actions">
-        <button class="modal-btn ghost" onclick="closeUpload()">完成</button>
+        <button class="modal-btn ghost hidden" id="btnPickAgain" onclick="resetUploadUI()">重新选择文件</button>
+        <button class="modal-btn ghost" onclick="closeUpload()">关闭</button>
       </div>
     </div>
   </div>
