@@ -106,6 +106,14 @@ async function parseBookAsync(bookId, filePath, title) {
       console.log(`[${bookId}] ${msg}`);
     });
 
+    // ⚠️ 校验：提取不到任何理论时绝不能标记为 parsed ——
+    //    否则用户会看到「上传成功、解析完成」，点进去却什么都没有，
+    //    只能反复重传，比直接报错更糟。宁可诚实地失败并说明原因。
+    const theoryCount = Array.isArray(result.theories) ? result.theories.length : 0;
+    if (theoryCount === 0) {
+      throw new Error('未能从本书内容中提炼出核心理论。可能原因：正文文字过少、内容不是一本书、或文件为扫描版。请换一本试试。');
+    }
+
     // 存入数据库
     const insertTheory = db.prepare(`
       INSERT INTO theories (id, book_id, idx, name, sub, def, eval_impact, eval_debate, src)
@@ -144,7 +152,7 @@ async function parseBookAsync(bookId, filePath, title) {
         if (chain) {
           const cid = uuidv4();
           insertChain.run(cid, bookId, tid, chain.title || `${t.name} · 验证逻辑链`);
-          chain.steps.forEach((s, si) => {
+          (chain.steps || []).forEach((s, si) => {
             insertStep.run(uuidv4(), cid, si + 1, s.label, s.content, s.source || '');
           });
         }
@@ -186,35 +194,45 @@ async function extractText(filePath) {
   const ext = path.extname(filePath).toLowerCase();
 
   if (ext === '.txt') {
-    return fs.readFileSync(filePath, 'utf-8');
+    const t = fs.readFileSync(filePath, 'utf-8');
+    if (t.trim().length < 100) throw new Error('文本文件内容过短，无法解析');
+    return t;
   }
 
   if (ext === '.pdf') {
-    // 使用 pdf.js 提取文本（需要 pdfjs-dist 包）
+    // 用 pdf.js 提取文本
+    // ⚠️ 提取失败时必须抛错，绝不能返回占位字符串 —— 占位串长度超过「有效文本」阈值，
+    //    会让整条流水线误判为成功：AI 拿占位串自然提炼不出任何理论，最终得到
+    //    status=parsed 但 theories=[] 的「假成功」，用户看到的是「上传成功却什么也没有」。
+    let text = '';
     try {
       const pdfjs = require('pdfjs-dist');
       const data = fs.readFileSync(filePath);
-      const doc = await pdfjs.getDocument({ data }).promise;
-      let text = '';
-      for (let i = 1; i <= Math.min(doc.numPages, 50); i++) {
+      const doc = await pdfjs.getDocument({ data, useSystemFonts: false }).promise;
+      const pages = Math.min(doc.numPages, 50);
+      for (let i = 1; i <= pages; i++) {
         const page = await doc.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ') + '\n';
+        text += content.items.map(item => item.str || '').join(' ') + '\n';
+      }
+      if (text.replace(/\s/g, '').length < 200) {
+        throw new Error('该 PDF 提取不到文字（共 ' + doc.numPages + ' 页，很可能是扫描版／图片型 PDF）。请改用带文字层的 PDF，或先做 OCR。');
       }
       return text;
     } catch (e) {
-      console.warn('PDF 提取失败，尝试备用方法:', e.message);
-      return `[PDF 文件: ${path.basename(filePath)}]`;
+      // 区分「我们主动抛出的可读原因」与「pdf.js 内部错误」
+      if (e.message && e.message.includes('提取不到文字')) throw e;
+      throw new Error('PDF 文字提取失败：' + (e.message || '未知错误'));
     }
   }
 
   if (ext === '.epub') {
     // EPUB 本质是 zip，尝试解压后提取
+    let text = '';
     try {
       const AdmZip = require('adm-zip');
       const zip = new AdmZip(filePath);
       const entries = zip.getEntries();
-      let text = '';
       for (const entry of entries) {
         if (entry.entryName.endsWith('.xhtml') || entry.entryName.endsWith('.html') || entry.entryName.endsWith('.htm')) {
           const content = entry.getData().toString('utf-8');
@@ -222,14 +240,17 @@ async function extractText(filePath) {
           text += content.replace(/<[^>]*>/g, '') + '\n';
         }
       }
-      return text || `[EPUB 文件: ${path.basename(filePath)}]`;
     } catch (e) {
-      console.warn('EPUB 提取失败:', e.message);
-      return `[EPUB 文件: ${path.basename(filePath)}]`;
+      throw new Error('EPUB 解析失败：' + (e.message || '未知错误'));
     }
+    if (text.replace(/\s/g, '').length < 200) {
+      throw new Error('该 EPUB 提取不到文字，请确认文件未损坏');
+    }
+    return text;
   }
 
-  return `[${ext.toUpperCase()} 文件: ${path.basename(filePath)}]`;
+  // MOBI 等暂不支持提取：明确报错，不要返回占位串冒充成功
+  throw new Error(`暂不支持从 ${ext.toUpperCase()} 文件中提取文字，请上传 EPUB / PDF / TXT`);
 }
 
 module.exports = router;

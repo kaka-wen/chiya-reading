@@ -642,6 +642,29 @@
   .note-card.new .nc-label{font-size:13px;font-weight:600}
   .notes-empty{grid-column:1/-1;font-size:13px;color:var(--ink-3);line-height:1.9;padding:8px 0 4px}
 
+  /* ===== 上传书籍：本书概况 ===== */
+  .up-ov-hero{display:flex;gap:24px;align-items:center;padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:24px}
+  .up-ov-cover{width:88px;height:122px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:26px;box-shadow:0 2px 10px rgba(42,38,34,.14)}
+  .up-ov-kicker{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--clay-2);text-transform:uppercase;margin-bottom:8px}
+  .up-ov-title{font-size:26px;font-weight:700;letter-spacing:-.4px;line-height:1.3;font-family:Georgia,'Songti SC','STSong',serif;margin-bottom:6px;word-break:break-word}
+  .up-ov-sub{font-size:13px;color:var(--ink-2)}
+  .up-ov-block{margin-bottom:26px}
+  .up-ov-block h3{font-size:15px;font-weight:700;margin-bottom:12px;font-family:Georgia,'Songti SC','STSong',serif;display:flex;align-items:center;gap:8px}
+  .up-ov-block h3::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}
+  .up-ov-metrics{display:flex;gap:10px;flex-wrap:wrap}
+  .up-ov-metric{background:var(--sunken);border-radius:4px;padding:12px 18px;min-width:104px}
+  .up-ov-metric b{display:block;font-size:24px;font-weight:800;color:var(--clay);font-family:Georgia,serif;line-height:1.2}
+  .up-ov-metric span{font-size:12px;color:var(--ink-2)}
+  .up-ov-list{display:flex;flex-wrap:wrap;gap:8px}
+  .up-ov-theory{font-size:13px;padding:6px 14px;border-radius:20px;background:var(--pine-bg);color:var(--pine-2);font-weight:600;cursor:pointer;transition:.15s}
+  .up-ov-theory:hover{background:var(--pine);color:#fff}
+  .up-ov-note{font-size:13.5px;color:var(--ink-2);line-height:1.95}
+  .up-ov-note b{color:var(--ink)}
+  .up-ov-warn{background:var(--gold-bg);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;padding:14px 18px;font-size:13.5px;color:var(--ink);line-height:1.9}
+  .up-ov-warn em{font-style:normal;font-weight:700;color:var(--gold-2)}
+  .subtab.disabled,.tab.disabled{opacity:.42;cursor:not-allowed}
+  .subtab.disabled:hover,.tab.disabled:hover{background:var(--card)}
+
   /* ===== 笔记书写区：独立整页 ===== */
   /* 这里才是「正文」：给足高度与行距，像一页稿纸，鼓励写长、写完整。 */
   .editor{max-width:760px;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:34px 38px 26px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative}
@@ -1529,6 +1552,9 @@ let started = false;      // 是否已开始评测
 let shelved = false;      // 当前精读的书是否已放入书架
 let shelvedAsFinished = false;  // 入架时是否已评测完成（决定回退时是否重置评测）
 let currentReadingBook = null;  // 当前正在精读的书名（null = 没有正在精读的书）
+/* 常用内联图标：多处复用，避免同一个 SVG 被抄 20 遍 */
+const ICON_FILE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+
 const READING_BOOK = {title:'思考，快与慢', author:'丹尼尔·卡尼曼 · 认知心理学', authorShort:'丹尼尔·卡尼曼',
                       gradient:'linear-gradient(150deg,#C0603C,#8F3F26)', initial:'思'};
 
@@ -1536,6 +1562,8 @@ const READING_BOOK = {title:'思考，快与慢', author:'丹尼尔·卡尼曼 �
 function renderOverview(){
   const wrap = document.getElementById('ovRoot');
   if(!wrap) return;
+  // 上传的书没有「作者缘起 / 全书结构」这类原书信息，走专用概况页
+  if(isUploadedBook()){ renderUploadedOverview(); return; }
   const o = BOOK_OVERVIEW;
   wrap.innerHTML = `
   <div class="ov-wrap">
@@ -1615,48 +1643,54 @@ function renderOverview(){
 
 /* ================= 渲染：理论图谱 ================= */
 function renderGraph(){
-  const pairs = [
-    ['双系统模型','双加工理论\nStanovich & West'],
-    ['前景理论','期望效用理论\nv.Neumann'],
-    ['损失厌恶','禀赋效应\nRichard Thaler'],
-    ['锚定效应','启发式与偏差\nTversky & Kahneman'],
-    ['峰终定律','体验/记忆自我\nKahneman'],
-    ['框架效应','助推 (Nudge)\nThaler & Sunstein']
-  ];
+  // 左列 = 核心理论，右列 = 它的首个关联理论。全部由数据派生，不写死演示书内容。
+  const pairs = THEORIES.map(t => {
+    const r = (t.related || [])[0];
+    if(!r) return null;
+    return [t.name, r.name + '\n' + (r.meta || '')];
+  }).filter(Boolean);
+
+  const svg = document.querySelector('.graph-box svg');
+  const need = 40 + pairs.length * 72;
+  if(svg) svg.setAttribute('viewBox', '0 0 760 ' + Math.max(240, need));
+
   const links = document.getElementById('graph-links');
   const nodes = document.getElementById('graph-nodes');
-  pairs.forEach((p,i)=>{
-    const y = 32 + i*72;
-    // 连线
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1','258'); line.setAttribute('y1',y+24);
-    line.setAttribute('x2','480'); line.setAttribute('y2',y+24);
+  if(!links || !nodes) return;
+  links.innerHTML = ''; nodes.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+
+  pairs.forEach((p, i) => {
+    const y = 32 + i * 72;
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1','258'); line.setAttribute('y1', y + 24);
+    line.setAttribute('x2','480'); line.setAttribute('y2', y + 24);
     line.setAttribute('marker-end','url(#arrow)');
     links.appendChild(line);
-    // 左节点（核心理论）
-    const lr = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    lr.setAttribute('x','8'); lr.setAttribute('y',y); lr.setAttribute('width','250'); lr.setAttribute('height','48');
+
+    const lr = document.createElementNS(NS, 'rect');
+    lr.setAttribute('x','8'); lr.setAttribute('y', y); lr.setAttribute('width','250'); lr.setAttribute('height','48');
     lr.setAttribute('rx','10'); lr.setAttribute('fill','#C0603C');
     nodes.appendChild(lr);
-    const lt = document.createElementNS('http://www.w3.org/2000/svg','text');
-    lt.setAttribute('x','133'); lt.setAttribute('y',y+30); lt.setAttribute('text-anchor','middle');
-    lt.setAttribute('fill','#fff'); lt.setAttribute('font-size','14'); lt.setAttribute('font-weight','700');
-    lt.textContent = p[0];
+    const lt = document.createElementNS(NS, 'text');
+    lt.setAttribute('x','133'); lt.setAttribute('y', y + 30); lt.setAttribute('text-anchor','middle');
+    lt.setAttribute('fill','#fff'); lt.setAttribute('font-size','13'); lt.setAttribute('font-weight','700');
+    lt.textContent = p[0].length > 16 ? p[0].slice(0, 16) + '…' : p[0];
     nodes.appendChild(lt);
-    // 右节点（学术理论）
-    const rr = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    rr.setAttribute('x','480'); rr.setAttribute('y',y); rr.setAttribute('width','272'); rr.setAttribute('height','48');
+
+    const rr = document.createElementNS(NS, 'rect');
+    rr.setAttribute('x','480'); rr.setAttribute('y', y); rr.setAttribute('width','272'); rr.setAttribute('height','48');
     rr.setAttribute('rx','10'); rr.setAttribute('fill','var(--pine-bg)'); rr.setAttribute('stroke','#A9C4BA');
     nodes.appendChild(rr);
-    const rt1 = document.createElementNS('http://www.w3.org/2000/svg','text');
-    rt1.setAttribute('x','616'); rt1.setAttribute('y',y+21); rt1.setAttribute('text-anchor','middle');
-    rt1.setAttribute('fill','#2F5D50'); rt1.setAttribute('font-size','13'); rt1.setAttribute('font-weight','700');
-    rt1.textContent = p[1].split('\n')[0];
+    const rt1 = document.createElementNS(NS, 'text');
+    rt1.setAttribute('x','616'); rt1.setAttribute('y', y + 21); rt1.setAttribute('text-anchor','middle');
+    rt1.setAttribute('fill','#2F5D50'); rt1.setAttribute('font-size','12.5'); rt1.setAttribute('font-weight','700');
+    rt1.textContent = p[1].split('\n')[0].slice(0, 22);
     nodes.appendChild(rt1);
-    const rt2 = document.createElementNS('http://www.w3.org/2000/svg','text');
-    rt2.setAttribute('x','616'); rt2.setAttribute('y',y+38); rt2.setAttribute('text-anchor','middle');
+    const rt2 = document.createElementNS(NS, 'text');
+    rt2.setAttribute('x','616'); rt2.setAttribute('y', y + 38); rt2.setAttribute('text-anchor','middle');
     rt2.setAttribute('fill','var(--ink-3)'); rt2.setAttribute('font-size','11');
-    rt2.textContent = p[1].split('\n')[1] || '';
+    rt2.textContent = (p[1].split('\n')[1] || '').slice(0, 26);
     nodes.appendChild(rt2);
   });
 }
@@ -2157,13 +2191,13 @@ function renderTheories(){
 /* ================= 渲染：逻辑链 ================= */
 function renderLogic(){
   const wrap = document.getElementById('logicContainer');
-  const order = ['sys','prospect','loss','anchor','peakend','frame'];
-  const labels = {'sys':'双系统模型','prospect':'前景理论','loss':'损失厌恶','anchor':'锚定效应','peakend':'峰终定律','frame':'框架效应'};
-  wrap.innerHTML = order.map(id=>{
-    const l = LOGIC[id];
+  if(!wrap) return;
+  // 由 THEORIES 驱动，不写死理论的 id 与名称 —— 否则换一本书（如上传的书）就渲染不出内容
+  const html = THEORIES.map(t=>{
+    const l = LOGIC[t.id];
     if(!l) return '';
     return `<div class="card" style="margin-bottom:16px">
-      <h4 style="margin-bottom:16px;color:var(--clay)">${labels[id]}</h4>
+      <h4 style="margin-bottom:16px;color:var(--clay)">${t.name}</h4>
       <div class="logic-chain">
         ${l.steps.map((s,i)=>`
           <div class="logic-step">
@@ -2171,12 +2205,13 @@ function renderLogic(){
             <div class="content">
               <h4>${s.t}</h4>
               <p>${s.d}</p>
-              ${s.s?`<div class="src"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>${s.s}</div>`:''}
+              ${s.s?`<div class="src"><span class="ico">${ICON_FILE}</span>${s.s}</div>`:''}
             </div>
           </div>`).join('')}
       </div>
     </div>`;
   }).join('');
+  wrap.innerHTML = html || '<div class="card"><p style="font-size:13.5px;color:var(--ink-2);line-height:1.9">本书暂无可展示的验证逻辑链。</p></div>';
 }
 
 /* ================= 渲染：案例 ================= */
@@ -2841,6 +2876,8 @@ function deleteCurrentNote(){
   showNotes();
 }
 function openBook(title){
+  // 从上传的书切回演示书时，把数据换回来（否则演示书会显示成上传书的内容）
+  if(isUploadedBook() && (!title || title === READING_BOOK.title)) clearUploadedState();
   hideAllViews();
   document.getElementById('view-book').classList.remove('hidden');
   // 仅当操作的是「思考，快与慢」时，重新精读 = 状态回退：从书架移除，回到「正在精读」
@@ -2885,8 +2922,15 @@ function openBook(title){
     document.querySelector('.book-head-info .desc').textContent = '本书已上传至赤牙·AI阅读，你可以使用全部精读功能：查看全书思维导图、核心理论、逻辑链与案例，并通过 AI 提问评测掌握度。';
     document.querySelector('.book-head-info .tag-row').innerHTML = '<span class="tag">已上传</span>';
   }
+  // 上传的书沿用书架封面同色，避免同一本书两处颜色不一致
+  if(isUploadedBook() && activeBook.gradient){
+    const c = document.querySelector('.book-head .cover-lg');
+    if(c) c.style.background = activeBook.gradient;
+  }
   // 更新「正在精读」状态（赤牙书屋展示）
   currentReadingBook = title || READING_BOOK.title;
+  // 概况页内容随书籍变化，换书后必须重渲染（否则停留在上一本的概况上）
+  renderOverview();
   updateStudyPanel();
   setActiveNav(null);
   window.scrollTo(0,0);
@@ -2924,6 +2968,10 @@ function openFinished(title, mastery, gradient, author, finished, tested, total)
   window.scrollTo(0,0);
 }
 function switchMain(main){
+  if(isUploadedBook() && UPLOADED_DISABLED_MAINS.includes(main)){
+    toast('上传的书暂不提供「互动讨论」——它依赖原书的社区话题');
+    return;
+  }
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.main===main));
   document.getElementById('main-analysis').classList.toggle('hidden', main!=='analysis');
   document.getElementById('main-discuss').classList.toggle('hidden', main!=='discuss');
@@ -2933,6 +2981,12 @@ function switchMain(main){
   }
 }
 function switchSub(sub){
+  if(isUploadedBook() && UPLOADED_DISABLED_SUBS.includes(sub)){
+    toast(sub === 'map'
+      ? '上传的书暂不提供思维导图 —— 它依赖原书的章节结构'
+      : '上传的书暂不提供书中自测 —— 题目来自原书');
+    return;
+  }
   const mapEl = document.getElementById('sub-map');
   const mapWasHidden = !mapEl || mapEl.classList.contains('hidden');
   document.querySelectorAll('.subtab').forEach(t=>t.classList.toggle('active', t.dataset.sub===sub));
@@ -2946,6 +3000,9 @@ function switchSub(sub){
     if(mapWasHidden && !mapFitted){ renderMindMap(); mapFitted = true; }  // 第一次真正显示：按真实尺寸适应
     else renderMindMap({keepView:true});                                  // 之后一律保留用户的视角
   }
+  // 概况页内容依赖当前书籍（演示书 / 上传的书），每次切到它都要重渲染，
+  // 否则换书后仍显示上一本的概况。
+  if(sub==='overview') renderOverview();
   if(sub==='quiz' && !started) resetQuiz();
   if(window.scrollTo) window.scrollTo(0,0);
 }
@@ -3023,6 +3080,248 @@ function renderStore(){
 function openStoreBook(title){
   // 从集市打开的书直接进入精读，不消耗 token
   openBook(title);
+}
+
+/* ================= 上传书籍：从服务端加载并渲染 =================
+   演示书的解析内容写在常量里；上传的书要能「真读」，就必须由 /api/books/:id 驱动。
+   这里把服务端返回的结构映射成前端各渲染函数认识的数据形状，再切到详情页。 */
+let activeBook = null;              // null = 演示书；否则 { isUploaded:true, serverId, title, ext, data }
+let uploadedRaw = null;             // 服务端原始返回，供「本书概况」使用
+
+// 上传书籍不支持的下钻内容：这些依赖原书的结构化信息（章节体系 / 自测题 / 社区话题），
+// 服务端没有对应数据。与其显示演示书的内容骗人，不如明确禁用并说明原因。
+const UPLOADED_DISABLED_SUBS = ['map', 'selfcheck'];
+const UPLOADED_DISABLED_MAINS = ['discuss'];
+function isUploadedBook(){ return !!(activeBook && activeBook.isUploaded); }
+
+function safeJson(v, fallback){
+  if(Array.isArray(v)) return v;
+  if(typeof v !== 'string' || !v.trim()) return fallback;
+  try { const r = JSON.parse(v); return Array.isArray(r) ? r : fallback; } catch(_) { return fallback; }
+}
+
+/* 服务端结构 → 前端结构（THEORIES / LOGIC / CASES） */
+function mapUploadedBook(data){
+  const src = Array.isArray(data.theories) ? data.theories : [];
+  const label = i => 'up-t' + (i + 1);
+
+  const theories = src.map((t, i) => ({
+    id: label(i),
+    idx: i + 1,
+    name: t.name || ('核心理论 ' + (i + 1)),
+    sub: t.sub || '核心理论',
+    def: t.def || '（AI 未给出定义）',
+    eval: {
+      impact: t.eval_impact || '（本书为上传内容，AI 未给出学术影响评价）',
+      debate: t.eval_debate || '（本书为上传内容，AI 未给出学术争议说明）'
+    },
+    related: (t.related || []).map(r => ({
+      name: r.name || '关联理论',
+      meta: r.meta || '未标注提出者',
+      link: r.link || '关联',
+      def: r.def || '',
+      source: r.source === 'book' ? 'book' : 'ai',
+      pos: r.pos || '',
+      year: r.year || ''
+    })),
+    src: t.src || ''
+  }));
+
+  const logic = {};
+  (data.chains || []).forEach(c => {
+    const i = src.findIndex(x => x.id === c.theory_id);
+    if(i < 0) return;
+    logic[label(i)] = {
+      title: c.title || (src[i].name + ' · 验证逻辑链'),
+      steps: (c.steps || []).map(st => ({
+        t: st.label || '步骤',
+        d: st.content || '',
+        s: st.source || ''
+      }))
+    };
+  });
+
+  const cases = (data.cases || []).map(c => {
+    const i = src.findIndex(x => x.id === c.theory_id);
+    return {
+      tid: i >= 0 ? label(i) : '',
+      tag: c.tag || (i >= 0 ? src[i].name : ''),
+      title: c.title || '案例',
+      scene: c.scene || '',
+      result: c.result || '',
+      why: c.why || '',
+      steps: safeJson(c.steps, []),
+      use: c.use_text || '',
+      src: { t: c.src_type || 'ai', text: c.src_text || 'AI 推演' }
+    };
+  });
+
+  return { theories, logic, cases };
+}
+
+function applyUploadedData(mapped){
+  THEORIES.length = 0; mapped.theories.forEach(t => THEORIES.push(t));
+  Object.keys(LOGIC).forEach(k => delete LOGIC[k]);
+  Object.assign(LOGIC, mapped.logic);
+  CASES.book = mapped.cases;
+  CASES.real = [];
+}
+
+/* 上传书籍的「本书概况」：讲清「解析出了什么、哪些暂时没有」，不假装是完整精读 */
+function renderUploadedOverview(){
+  const wrap = document.getElementById('ovRoot');
+  if(!wrap) return;
+  const d = uploadedRaw || {};
+  const book = activeBook || {};
+  const tCount = (d.theories || []).length;
+  const cCount = (d.chains || []).length;
+  const kCount = (d.cases || []).length;
+  const initial = (book.title || '书').charAt(0);
+  const grad = (activeBook && activeBook.gradient) || 'linear-gradient(150deg,#C0603C,#8F3F26)';
+  const ext = (book.ext || '').toUpperCase();
+  const theoryChips = (d.theories || []).map((t, i) =>
+    `<span class="up-ov-theory" onclick="focusTheory('up-t${i + 1}')">${escapeHtml(t.name)}</span>`).join('');
+
+  wrap.innerHTML = `
+  <div class="ov-wrap">
+    <div class="up-ov-hero">
+      <div class="up-ov-cover" style="background:${grad}">${escapeHtml(initial)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="up-ov-kicker">Uploaded Book · 你上传的书</div>
+        <div class="up-ov-title">${escapeHtml(book.title)}</div>
+        <div class="up-ov-sub">${ext} 格式 · 上传于 ${escapeHtml((d.created_at || '').replace('T',' ').slice(0, 16))} · AI 已从原文提炼内容</div>
+      </div>
+    </div>
+
+    <div class="up-ov-block">
+      <h3>解析结果</h3>
+      <div class="up-ov-metrics">
+        <div class="up-ov-metric"><b>${tCount}</b><span>核心理论</span></div>
+        <div class="up-ov-metric"><b>${cCount}</b><span>验证逻辑链</span></div>
+        <div class="up-ov-metric"><b>${kCount}</b><span>案例</span></div>
+      </div>
+    </div>
+
+    ${tCount ? `<div class="up-ov-block">
+      <h3>本书核心理论</h3>
+      <div class="up-ov-list">${theoryChips}</div>
+    </div>` : ''}
+
+    <div class="up-ov-block">
+      <h3>这本书该怎么读</h3>
+      <div class="up-ov-note">
+        先看 <b>① 核心理论</b> 建立骨架，再走 <b>② 验证依据 / 逻辑链</b> 看论证过程，
+        最后到 <b>③ 核心案例</b> 看它落在真实情境里是什么样子。点上面的理论标签可直接跳到详解。
+      </div>
+    </div>
+
+    <div class="up-ov-block">
+      <h3>需要你知道的</h3>
+      <div class="up-ov-warn">
+        <em>为什么没有思维导图、书中自测和讨论区？</em><br>
+        这三项依赖原书的结构化信息（章节目录、原书自测题、社区话题），而上传的书我们只有正文文字，
+        拿不到这些。与其用示例书的内容冒充，不如直接告诉你：<b>本书暂不提供这三项</b>。
+      </div>
+    </div>
+
+    <div class="up-ov-block">
+      <h3>来源说明</h3>
+      <div class="up-ov-note">
+        以上内容全部由 AI 从你上传的正文中提炼，<b>未经人工校对</b>，可能与原书原意有偏差，请以原文为准。
+        关联理论中标注「书中提及」的来自原文，标注「AI 补充」的是 AI 自行关联的学术界理论。
+      </div>
+    </div>
+  </div>`;
+}
+
+/* 上传书籍时禁用不支持的下钻入口（并加上视觉标记） */
+function setUploadedTabState(isUp){
+  document.querySelectorAll('.subtab').forEach(el => {
+    const dis = isUp && UPLOADED_DISABLED_SUBS.includes(el.dataset.sub);
+    el.classList.toggle('disabled', dis);
+    el.title = dis ? '上传的书暂不提供这项内容' : '';
+  });
+  document.querySelectorAll('.tab').forEach(el => {
+    const dis = isUp && UPLOADED_DISABLED_MAINS.includes(el.dataset.main);
+    el.classList.toggle('disabled', dis);
+    el.title = dis ? '上传的书暂不提供这项内容' : '';
+  });
+}
+
+/* 打开上传的书：拉取解析结果 → 映射 → 渲染 */
+async function openUploadedBook(serverId, fallbackTitle){
+  if(!serverId){ toast('这本书缺少服务端记录，无法打开'); return; }
+  toast('正在读取解析结果…');
+  let data = null;
+  try {
+    const res = await fetch(API_BASE + '/api/books/' + encodeURIComponent(serverId), { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+  } catch(e){
+    toast('读取失败：' + e.message);
+    return;
+  }
+
+  // 「parsed 但内容为空」也要当成失败：服务端历史上会把提取不到文字的 PDF 标记为
+  // parsed（配合占位符喂给 AI，AI 自然返回空），若这里只判断 status，就会打开一个空书。
+  const theoryCount = (data.theories || []).length;
+  if(data.status !== 'parsed' || theoryCount === 0){
+    // 诚实反馈：不要用空数据假装打开成功
+    const why = data.status === 'failed'
+      ? (data.parse_error || '解析失败')
+      : theoryCount === 0
+        ? '这本书没有解析出任何内容。最可能的原因：文件是扫描版／图片型 PDF，正文没有文字层；或正文文字过少。'
+        : '这本书还在解析中，请稍后再试';
+    toast('无法开始精读：' + why);
+    // 概况页给一条可读的说明
+    activeBook = { isUploaded:true, serverId, title: data.title || fallbackTitle, ext: data.file_ext, data:null };
+    uploadedRaw = data;
+    hideAllViews();
+    document.getElementById('view-book').classList.remove('hidden');
+    document.querySelector('.book-head-info h2').textContent = data.title || fallbackTitle;
+    document.querySelector('.book-head-info .author').textContent = (data.file_ext||'').toUpperCase() + ' · 未解析成功';
+    document.querySelector('.book-head-info .desc').textContent = why;
+    document.querySelector('.book-head-info .tag-row').innerHTML = '<span class="tag">解析未完成</span>';
+    document.getElementById('ovRoot').innerHTML =
+      `<div class="card"><h3 style="margin-bottom:10px">暂时无法精读这本书</h3>
+       <p style="font-size:13.5px;color:var(--ink-2);line-height:1.95">${escapeHtml(why)}</p></div>`;
+    setUploadedTabState(true);
+    window.scrollTo(0,0);
+    return;
+  }
+
+  const mapped = mapUploadedBook(data);
+  applyUploadedData(mapped);
+
+  // 记住这本书：概况页、案例页、标签禁用都依赖它
+  const gradients = ['linear-gradient(150deg,#C0603C,#8F3F26)','linear-gradient(150deg,#2F5D50,#1C3B33)','linear-gradient(150deg,#C9A227,#96741A)','linear-gradient(150deg,#5A4A3C,#2E251D)'];
+  activeBook = { isUploaded:true, serverId, title: data.title || fallbackTitle, ext: data.file_ext,
+                 gradient: gradients[Math.floor(Math.random()*gradients.length)], data };
+  uploadedRaw = data;
+
+  // 重渲染所有依赖数据的视图
+  renderTheories(); renderLogic(); renderGraph(); renderCaseFilter(); renderCases();
+  caseFilter = 'all';
+
+  openBook(activeBook.title);          // 复用详情页骨架（标题/封面/入架按钮）
+  setUploadedTabState(true);
+  switchMain('analysis');
+  switchSub('overview');
+  toast('已载入《' + activeBook.title + '》的解析结果');
+}
+
+/* 回到演示书时清空上传书籍状态 */
+function clearUploadedState(){
+  if(!isUploadedBook()) return;
+  activeBook = null; uploadedRaw = null;
+  setUploadedTabState(false);
+  const demoLogic = DEMO_DATA.logic;
+  THEORIES.length = 0; DEMO_DATA.theories.forEach(t => THEORIES.push(t));
+  Object.keys(LOGIC).forEach(k => delete LOGIC[k]);
+  Object.assign(LOGIC, demoLogic);
+  CASES.book = DEMO_DATA.casesBook;
+  CASES.real = DEMO_DATA.casesReal;
+  renderTheories(); renderLogic(); renderGraph(); renderCaseFilter(); renderCases();
 }
 
 /* ================= 自测评估 ================= */
@@ -3153,7 +3452,8 @@ function getShelfData(){
       mastery: m ? m[1] + '%' : '0%',
       finished: isFinished,
       tested: 0, total: 0,
-      uploaded: true
+      uploaded: true,
+      serverId: card.dataset.serverId || ''
     };
   });
 }
@@ -3174,6 +3474,7 @@ function restoreShelf(shelfData){
     const card = document.createElement('div');
     card.className = 'book-card';
     card.dataset.bookId = book.title;
+    if(book.serverId) card.dataset.serverId = book.serverId;
     card.innerHTML = `
       <div class="cover" style="background:${g}">
         <div class="cover-title">${displayName}</div>
@@ -3192,6 +3493,60 @@ function restoreShelf(shelfData){
     grid.appendChild(card);
   });
   updateShelfCount();
+}
+
+/* ================= 演示数据快照 =================
+   演示书的内容是常量；打开上传书籍时会把 THEORIES/LOGIC/CASES 换成该书的数据。
+   这里在初始化前留一份快照，切回演示书时用来还原。 */
+const DEMO_DATA = {
+  theories: THEORIES.slice(),
+  logic: Object.assign({}, LOGIC),
+  casesBook: CASES.book.slice(),
+  casesReal: CASES.real.slice()
+};
+
+/* ================= 书架上的上传书籍 ================= */
+
+function findShelfCard(title){
+  const grid = document.getElementById('shelfGrid');
+  if(!grid) return null;
+  return [...grid.querySelectorAll('.book-card')].find(c => (c.dataset.bookId || '') === title) || null;
+}
+
+/* 书架卡片的「开始精读」：有服务端记录 → 打开上传书籍；否则按演示书进详情页。
+   上传的书绝不能走 openBook，否则会显示成演示书的内容 —— 这正是「上传成功却看不到自己的书」的来源。 */
+function openShelfBook(title, ev){
+  if(ev && ev.stopPropagation) ev.stopPropagation();
+  const card = findShelfCard(title);
+  const sid = card ? card.dataset.serverId : '';
+  if(sid) openUploadedBook(sid, title);
+  else openBook(title);
+}
+
+/* 用服务端的书籍列表补齐书架。
+   服务端才是上传书籍的真相来源：换浏览器、清缓存后 localStorage 会空，
+   但只要服务端还有记录，书架就应该能显示出来，否则用户会以为书丢了。 */
+async function syncUploadedBooks(){
+  try{
+    const res = await fetch(API_BASE + '/api/books?user_id=default', { cache: 'no-store' });
+    if(!res.ok) return;
+    const books = await res.json();
+    if(!Array.isArray(books) || !books.length) return;
+    const grid = document.getElementById('shelfGrid');
+    if(!grid) return;
+    let added = 0;
+    books.forEach(b => {
+      if([...grid.querySelectorAll('.book-card')].some(c => c.dataset.serverId === b.id)) return;
+      const st = b.status === 'parsed' ? 'ok' : (b.status === 'failed' ? 'fail' : 'pending');
+      addToShelf(b.title, (b.file_ext || '').toLowerCase(), null, st, b.id, false);
+      added++;
+    });
+    if(added){ updateShelfCount(); saveState(); }
+  }catch(e){
+    // 不能静默吞错：这里曾因在 API_BASE 声明前调用而抛 TDZ，被吞掉后表现为
+    // 「书架永远是空的」，排查成本极高。失败要能看见，但不影响演示内容。
+    console.warn('[syncUploadedBooks] 同步失败:', e && e.message);
+  }
 }
 
 /* ================= 初始化 ================= */
@@ -3378,7 +3733,7 @@ async function uploadAndParse(file, ext, titleName){
       setParseProgress(100, '解析完成');
       document.getElementById('stageParse').className = 'stage ok';
       document.getElementById('doneBadge').classList.remove('hidden');
-      addToShelf(titleName, ext, null, 'ok');
+      addToShelf(titleName, ext, null, 'ok', bookId);
       // 让用户立刻看到结果，而不是停在一个「完成」徽章上
       setTimeout(()=>{ closeUpload(); showShelf(); }, 1100);
       return;
@@ -3395,7 +3750,7 @@ async function uploadAndParse(file, ext, titleName){
       document.getElementById('stageParse').className = 'stage fail';
       document.getElementById('btnPickAgain').classList.remove('hidden');
       uploadFail('解析耗时超过 5 分钟，仍在服务器后台继续。可以关闭本窗口，稍后刷新「我的书架」查看。');
-      addToShelf(titleName, ext, null, 'pending');
+      addToShelf(titleName, ext, null, 'pending', bookId);
       return;
     }
   }
@@ -3438,7 +3793,7 @@ function formatSize(bytes){
 }
 /* 上传成功的书入架。state 反映真实解析状态，不一律写成「已上传」——
    否则解析失败/仍在解析的书会被当成可用，用户点进去看到的是演示内容，又以为上传没成功。 */
-function addToShelf(name, ext, cover, state){
+function addToShelf(name, ext, cover, state, serverId, animate){
   const grid = document.getElementById('shelfGrid');
   const gradients = [
     'linear-gradient(150deg,#C0603C,#8F3F26)',
@@ -3458,8 +3813,10 @@ function addToShelf(name, ext, cover, state){
     ? `<div class="status up-pending"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>已上传 · 后台解析中</div>`
     : `<div class="status up-fail"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>已上传 · 解析失败</div>`;
   const card = document.createElement('div');
-  card.className = 'book-card just-added';
+  const animateIn = animate !== false;
+  card.className = 'book-card' + (animateIn ? ' just-added' : '');
   card.dataset.bookId = name;
+  if(serverId) card.dataset.serverId = serverId;
   card.innerHTML = `
     <div class="shelf-new-tag">刚上传</div>
     <div class="cover" style="background:${g}">
@@ -3469,14 +3826,21 @@ function addToShelf(name, ext, cover, state){
     <div class="meta">${ext.toUpperCase()} · 已上传</div>
     ${statusHtml}
     <div class="card-actions" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-unshelve" title="开始精读本书" onclick="openShelfBook('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>开始精读</button>
       <button class="btn-unshelve" title="从书架移除" onclick="removeFromCard('${name.replace(/'/g,"\\'")}',event)"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>移除</button>
     </div>`;
   grid.prepend(card);
-  setTimeout(()=>card.classList.remove('just-added'), 3600);
+  if(animateIn) setTimeout(()=>card.classList.remove('just-added'), 3600);
   const cnt = document.getElementById('shelfCount');
   if(cnt) cnt.textContent = grid.children.length;
   saveState();
 }
+/* 服务端已上传的书补进书架。
+   必须放在脚本最末：它依赖 API_BASE 等常量，而 API_BASE 声明在初始化块之后，
+   在初始化块里调用会撞上 TDZ（const 未初始化）并抛出 —— 这个错误曾被 try/catch 吞掉，
+   表现为「书架一直是空的」。
+   另外 localStorage 可能为空（换浏览器 / 清缓存），服务端有记录就应该显示出来。 */
+syncUploadedBooks();
 </script>
 
 <div class="toast" id="toast"></div>
