@@ -606,16 +606,20 @@
   .note-entry:hover .note-entry-arrow{color:var(--clay);transform:translateX(3px)}
 
   /* ===== 读书笔记本：卡片网格 ===== */
-  /* 卡片是「索引」不是「正文」：只给 2 行摘要 + 字数，长度信息交给数字表达。
-     全文留给书写页。这样卡片高度统一、可一眼扫过，也不会出现截断在半句的尴尬。 */
-  .notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
-  .note-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:18px 20px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);min-height:164px;display:flex;flex-direction:column}
+  /* 卡片是「索引」不是「正文」：正文留给书写页。
+     比例刻意做成近正方（约 248×236 ≈ 1.05:1）。扁横幅（宽:高≈2:1）的问题是：
+     两三行摘要只占卡片一半宽度、下方大片留白，看着「上重下轻」；近正方才有
+     「一张索引卡」的观感，且一屏能放 4 列、扫起来更快。
+     摘要行数交给 CSS 的 line-clamp 决定（不在 JS 里预截断）—— 这样在任意列宽下
+     都恰好填满，不会出现「JS 已加省略号 + CSS 再截一刀」的双重截断。 */
+  .notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:16px;align-items:stretch}
+  .note-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px;cursor:pointer;transition:.18s;box-shadow:0 1px 4px rgba(42,38,34,.04);min-height:236px;display:flex;flex-direction:column}
   .note-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(42,38,34,.08);border-color:var(--line-2)}
-  .note-card .nc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-  .note-card .nc-date{font-size:11px;color:var(--ink-3)}
-  .note-card .nc-len{font-size:10.5px;color:var(--ink-3);background:var(--sunken);padding:1px 7px;border-radius:20px;white-space:nowrap}
-  .note-card .nc-text{font-size:14px;color:var(--ink);line-height:1.95;white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
-  .note-card .nc-book{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);margin-top:12px;align-self:flex-start}
+  .note-card .nc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-shrink:0}
+  .note-card .nc-date{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .note-card .nc-len{font-size:10.5px;color:var(--ink-3);background:var(--sunken);padding:1px 7px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+  .note-card .nc-text{font-size:14px;color:var(--ink);line-height:1.9;word-break:break-word;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;flex:1;white-space:normal}
+  .note-card .nc-book{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--gold-bg);color:var(--gold-2);margin-top:12px;align-self:flex-start;flex-shrink:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .note-card.new{align-items:center;justify-content:center;border-style:dashed;border-color:var(--line-2);background:transparent;color:var(--ink-2);gap:8px;text-align:center}
   .note-card.new:hover{border-color:var(--clay);background:var(--clay-bg);color:var(--clay-2)}
   .note-card.new .nc-plus{font-size:26px;font-weight:300;line-height:1}
@@ -2687,10 +2691,9 @@ function escapeHtml(s){
 
 /* 摘要：折叠空白 → 取前 N 字 → 超长补省略号。
    目的是让短摘要「看起来就是摘要」而不是被截断的段落。 */
-function excerpt(text, n){
-  const flat = String(text).replace(/\s+/g, ' ').trim();
-  return flat.length > n ? flat.slice(0, n) + '…' : flat;
-}
+/* 摘要截断统一交给 CSS 的 line-clamp 做（见 .nc-text / .note-entry-preview）：
+   浏览器按实际列宽排版，截断位置永远恰好填满，不会出现「JS 已加省略号、
+   CSS 又截一刀」的双重截断。这里只保留字数统计。 */
 function noteLength(text){
   const t = String(text).replace(/\s+/g, '');
   return t.length + ' 字';
@@ -2707,7 +2710,7 @@ function renderNoteEntry(){
     pv.textContent = '还没有笔记 · 点进来写下你的第一段思考';
   }else{
     const latest = list[list.length - 1];
-    pv.textContent = latest.date + ' · ' + excerpt(latest.text, 56);
+    pv.textContent = latest.date + ' · ' + latest.text;
   }
 }
 
@@ -2739,7 +2742,7 @@ function renderNotesGrid(){
     card.dataset.noteId = n.id;
     card.innerHTML = `<div class="nc-top"><span class="nc-date">${escapeHtml(n.date)}</span>`
       + `<span class="nc-len">${noteLength(n.text)}</span></div>`
-      + `<div class="nc-text">${escapeHtml(excerpt(n.text, 68))}</div>`
+      + `<div class="nc-text">${escapeHtml(n.text)}</div>`
       + (n.book ? `<span class="nc-book">${escapeHtml(n.book)}</span>` : '');
     card.addEventListener('click', ()=> openNoteEditor(n.id));
     grid.appendChild(card);
