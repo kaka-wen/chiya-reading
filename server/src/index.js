@@ -49,7 +49,15 @@ app.use('/api', uploadRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  const db = require('./db');
+  // persistence: 'volume' 表示数据目录来自 DATA_DIR（应指向挂载卷），重新部署后数据仍在；
+  //              'ephemeral' 表示用的是容器内默认路径，每次部署都会清空 —— 需要挂卷。
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    persistence: db.DATA_DIR_SOURCE === 'env' ? 'volume' : 'ephemeral',
+    dataDir: db.DATA_DIR
+  });
 });
 
 // 错误处理

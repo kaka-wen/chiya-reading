@@ -14,6 +14,10 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const db = new Database(DB_PATH);
 
+// 供 /api/health 暴露：用于部署后一眼确认「是否真的挂上了持久化卷」。
+// 没挂卷时 dataDirSource 为 'default'，数据会在每次重新部署时清空。
+const DATA_DIR_SOURCE = process.env.DATA_DIR ? 'env' : 'default';
+
 // 开启 WAL 模式提升并发性能
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -144,5 +148,8 @@ db.exec(`
     UNIQUE(user_id, book_id)
   );
 `);
+
+db.DATA_DIR = DATA_DIR;
+db.DATA_DIR_SOURCE = DATA_DIR_SOURCE;
 
 module.exports = db;
