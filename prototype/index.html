@@ -185,6 +185,9 @@
   .reader{background:var(--card);border:1px solid var(--line);border-radius:4px;box-shadow:0 1px 4px rgba(42,38,34,.04);position:relative;overflow:hidden}
   .reader::before{content:'';position:absolute;top:0;left:40px;right:40px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
   .reader-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 30px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  /* 正文来源与截断说明。正文可能是自动提取的（有误差）或超长被截断的，
+     不说明白用户会以为「书就长这样」。 */
+  .reader-note{padding:10px 30px;font-size:12.5px;line-height:1.85;color:var(--ink-2);background:var(--sunken);border-bottom:1px solid var(--line)}
   .reader-meta{font-size:12.5px;color:var(--ink-3);min-width:0}
   .reader-book{font-weight:700;color:var(--ink-2);font-family:Georgia,'Songti SC','STSong',serif;font-size:14px}
   .reader-chap{color:var(--clay-2);font-weight:600}
@@ -969,6 +972,7 @@
           <button class="reader-btn" onclick="readerFont(1)" title="放大字号">A＋</button>
         </div>
       </div>
+      <div class="reader-note hidden" id="readerNote"></div>
       <div class="reader-body"><div class="reader-text" id="readerText"></div></div>
       <div class="reader-foot">
         <button class="reader-nav" id="readerPrev" onclick="readerGo(-1)">← 上一页</button>
@@ -2914,6 +2918,10 @@ function switchMain(main){
     toast('上传的书暂不提供「互动讨论」——它依赖原书的社区话题');
     return;
   }
+  if(main === 'analysis' && isUploadedBook() && !uploadedAnalysisAvailable){
+    toast('这本书的 AI 精读还没有内容（解析未完成），但原文可以读');
+    return;
+  }
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.main===main));
   document.getElementById('main-read').classList.toggle('hidden', main!=='read');
   document.getElementById('main-analysis').classList.toggle('hidden', main!=='analysis');
@@ -3088,13 +3096,18 @@ function paginatePlainText(text, target) {
   return pages.length ? pages : [{ name: '', text: '（本书暂无正文）' }];
 }
 
-function readerLoad(pages, key, bookTitle) {
+function readerLoad(pages, key, bookTitle, note) {
   readerPages = (pages && pages.length) ? pages : [{ name: '', text: '（本书暂无正文）' }];
   readerKey = key || 'default';
   const saved = Number(localStorage.getItem(READER_POS_KEY + ':' + readerKey));
   readerIndex = Number.isFinite(saved) ? Math.max(0, Math.min(saved, readerPages.length - 1)) : 0;
   const nameEl = document.getElementById('readerBookName');
   if (nameEl) nameEl.textContent = bookTitle || '本书';
+  const noteEl = document.getElementById('readerNote');
+  if (noteEl) {
+    noteEl.textContent = note || '';
+    noteEl.classList.toggle('hidden', !note);
+  }
   renderReader();
 }
 
@@ -3145,9 +3158,11 @@ async function mountReader() {
   if (!reader || !empty) return;
 
   if (!isUploadedBook()) {
+    const daoPages = buildDaoPages();
     reader.classList.remove('hidden');
     empty.classList.add('hidden');
-    readerLoad(buildDaoPages(), 'demo:' + READING_BOOK.title, READING_BOOK.title);
+    readerLoad(daoPages, 'demo:' + READING_BOOK.title, READING_BOOK.title,
+      '通行本（王弼本）全文，共 ' + daoPages.length + ' 章，按章分页。');
     return;
   }
 
@@ -3163,7 +3178,12 @@ async function mountReader() {
     if (!text.trim()) throw new Error('这本书没有可读的正文。可能是扫描版 PDF（没有文字层），或解析时未能保存正文。');
     reader.classList.remove('hidden');
     empty.classList.add('hidden');
-    readerLoad(paginatePlainText(text), 'srv:' + book.serverId, book.title);
+    // 自动提取的正文一定有误差（断行、页眉页脚、连字），如实说明比装作完美好
+    const chars = Number(data.char_count || text.length);
+    const note = '由你上传的文件自动提取，共 ' + chars + ' 字'
+      + (data.truncated ? '（原文件更长，这里只保留了前面一部分）' : '')
+      + '。自动提取可能有断行或页码残留，以原文件为准。';
+    readerLoad(paginatePlainText(text), 'srv:' + book.serverId, book.title, note);
   } catch (e) {
     reader.classList.add('hidden');
     empty.classList.remove('hidden');
@@ -3193,6 +3213,10 @@ let uploadedRaw = null;             // 服务端原始返回，供「本书概�
 // 服务端没有对应数据。与其显示演示书的内容骗人，不如明确禁用并说明原因。
 const UPLOADED_DISABLED_SUBS = ['map', 'selfcheck'];
 const UPLOADED_DISABLED_MAINS = ['discuss'];
+/* 上传书籍的「AI 精读」是否有内容。
+   为 false 时（解析失败/没提炼出理论，但正文还在）要把 AI 精读入口也禁用掉 ——
+   否则点进去是一片空白，比禁用更让人困惑。 */
+let uploadedAnalysisAvailable = true;
 function isUploadedBook(){ return !!(activeBook && activeBook.isUploaded); }
 
 function safeJson(v, fallback){
@@ -3272,7 +3296,59 @@ function applyUploadedData(mapped){
 function renderUploadedOverview(){
   const wrap = document.getElementById('ovRoot');
   if(!wrap) return;
-  const d = uploadedRaw || {};
+  const d0 = uploadedRaw || {};
+  const book0 = activeBook || {};
+  /* AI 精读没有内容（解析失败 / 没提炼出理论），但正文可读。
+     这时概况页的职责是解释「为什么没有」+「你现在能做什么」，
+     而不是罗列一堆 0（0 理论 / 0 逻辑链 / 0 案例 —— 说了等于没说）。 */
+  if(!uploadedAnalysisAvailable){
+    const ext0 = (book0.ext || '').toUpperCase();
+    const chars0 = Number(d0.char_count || 0);
+    const why0 = d0.status === 'failed'
+      ? (d0.parse_error || '解析失败')
+      : 'AI 没有从正文里提炼出核心理论（可能正文过短，或内容不是一本书）';
+    const grad0 = (activeBook && activeBook.gradient) || 'linear-gradient(150deg,#C0603C,#8F3F26)';
+    wrap.innerHTML = `
+    <div class="ov-wrap">
+      <div class="up-ov-hero">
+        <div class="up-ov-cover" style="background:${grad0}">${escapeHtml((book0.title || '书').charAt(0))}</div>
+        <div style="flex:1;min-width:0">
+          <div class="up-ov-kicker">Uploaded Book · 你上传的书</div>
+          <div class="up-ov-title">${escapeHtml(book0.title)}</div>
+          <div class="up-ov-sub">${ext0} 格式 · 正文 ${chars0} 字${d0.text_truncated ? '（超长，只保留了一部分）' : ''}</div>
+        </div>
+      </div>
+
+      <div class="up-ov-block">
+        <h3>AI 精读暂时是空的</h3>
+        <div class="up-ov-warn">
+          <em>原因</em><br>${escapeHtml(why0)}
+        </div>
+      </div>
+
+      <div class="up-ov-block">
+        <h3>但原文可以读</h3>
+        <div class="up-ov-note">
+          正文已经保存下来了（${chars0} 字），你可以直接翻页阅读原文。
+          ${d0.text_truncated ? '注意：这本书太长，阅读器只保留了前面一部分。' : ''}
+        </div>
+        <div class="ov-cta" style="margin-top:14px">
+          <button onclick="switchMain('read')">去读原文 →</button>
+        </div>
+      </div>
+
+      <div class="up-ov-block">
+        <h3>为什么 AI 精读会失败</h3>
+        <div class="up-ov-note">
+          最常见的是文件类型问题：<b>扫描版／图片型 PDF 没有文字层</b>，提取不到文字，
+          AI 自然无从提炼。此外 API 额度用尽、网络中断也会导致失败。<br>
+          换一本<b>带文字层的 PDF 或 TXT</b> 通常就能成功。重新上传后，这本书可以直接在书架上移除。
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+  const d = d0;
   const book = activeBook || {};
   const tCount = (d.theories || []).length;
   const cCount = (d.chains || []).length;
@@ -3336,16 +3412,21 @@ function renderUploadedOverview(){
 }
 
 /* 上传书籍时禁用不支持的下钻入口（并加上视觉标记） */
-function setUploadedTabState(isUp){
+function setUploadedTabState(isUp, analysisAvailable){
+  uploadedAnalysisAvailable = isUp ? analysisAvailable !== false : true;
   document.querySelectorAll('.subtab').forEach(el => {
     const dis = isUp && UPLOADED_DISABLED_SUBS.includes(el.dataset.sub);
     el.classList.toggle('disabled', dis);
     el.title = dis ? '上传的书暂不提供这项内容' : '';
   });
   document.querySelectorAll('.tab').forEach(el => {
-    const dis = isUp && UPLOADED_DISABLED_MAINS.includes(el.dataset.main);
+    const byKind = isUp && UPLOADED_DISABLED_MAINS.includes(el.dataset.main);
+    const noAnalysis = isUp && el.dataset.main === 'analysis' && !uploadedAnalysisAvailable;
+    const dis = byKind || noAnalysis;
     el.classList.toggle('disabled', dis);
-    el.title = dis ? '上传的书暂不提供这项内容' : '';
+    el.title = dis
+      ? (noAnalysis ? '这本书的 AI 精读还没有内容（解析未完成）' : '上传的书暂不提供这项内容')
+      : '';
   });
 }
 
@@ -3366,13 +3447,30 @@ async function openUploadedBook(serverId, fallbackTitle){
   // 「parsed 但内容为空」也要当成失败：服务端历史上会把提取不到文字的 PDF 标记为
   // parsed（配合占位符喂给 AI，AI 自然返回空），若这里只判断 status，就会打开一个空书。
   const theoryCount = (data.theories || []).length;
-  if(data.status !== 'parsed' || theoryCount === 0){
+  const canAnalyze = data.status === 'parsed' && theoryCount > 0;
+  const why = data.status === 'failed'
+    ? (data.parse_error || '解析失败')
+    : theoryCount === 0
+      ? '这本书没有解析出任何内容。最可能的原因：文件是扫描版／图片型 PDF，正文没有文字层；或正文文字过少。'
+      : '这本书还在解析中，请稍后再试';
+
+  /* AI 精读没内容，但服务端存下了正文 —— 那就让用户读原文。
+     这本来就是产品的两条路之一（愿意读原文的读原文），
+     绝不能因为「AI 提炼失败」就把整本书锁死：正文是用户自己的文件，它一直有价值。 */
+  if(!canAnalyze && data.has_text){
+    uploadedRaw = data;
+    const grads = ['linear-gradient(150deg,#C0603C,#8F3F26)','linear-gradient(150deg,#2F5D50,#1C3B33)','linear-gradient(150deg,#C9A227,#96741A)','linear-gradient(150deg,#5A4A3C,#2E251D)'];
+    activeBook = { isUploaded:true, serverId, title: data.title || fallbackTitle, ext: data.file_ext,
+                   gradient: grads[Math.floor(Math.random()*grads.length)], data };
+    setUploadedTabState(true, false);   // 必须先定状态：下面 openBook 里的概况渲染依赖它
+    openBook(activeBook.title, true);
+    switchMain('read');                 // 能用的只有原文，默认就停在这里
+    toast('AI 精读还没生成内容（' + why + '），但原文可以读');
+    return;
+  }
+
+  if(!canAnalyze){
     // 诚实反馈：不要用空数据假装打开成功
-    const why = data.status === 'failed'
-      ? (data.parse_error || '解析失败')
-      : theoryCount === 0
-        ? '这本书没有解析出任何内容。最可能的原因：文件是扫描版／图片型 PDF，正文没有文字层；或正文文字过少。'
-        : '这本书还在解析中，请稍后再试';
     toast('无法开始精读：' + why);
     // 概况页给一条可读的说明
     activeBook = { isUploaded:true, serverId, title: data.title || fallbackTitle, ext: data.file_ext, data:null };
@@ -3405,7 +3503,7 @@ async function openUploadedBook(serverId, fallbackTitle){
   caseFilter = 'all';
 
   openBook(activeBook.title, true);    // 复用详情页骨架；keepUploaded=true 保留上传书籍数据
-  setUploadedTabState(true);
+  setUploadedTabState(true, true);
   switchMain('analysis');
   switchSub('overview');
   toast('已载入《' + activeBook.title + '》的解析结果');
@@ -3617,7 +3715,11 @@ async function syncUploadedBooks(){
     books.forEach(b => {
       if([...grid.querySelectorAll('.book-card')].some(c => c.dataset.serverId === b.id)) return;
       const st = b.status === 'parsed' ? 'ok' : (b.status === 'failed' ? 'fail' : 'pending');
-      addToShelf(b.title, (b.file_ext || '').toLowerCase(), null, st, b.id, false);
+      const readable = Number(b.text_char_count || 0) > 0;
+      const tail = st === 'ok' ? '解析完成'
+        : st === 'pending' ? '后台解析中'
+        : readable ? 'AI 精读未完成 · 原文可读' : '解析失败';
+      addToShelf(b.title, (b.file_ext || '').toLowerCase(), null, st, b.id, false, tail);
       added++;
     });
     if(added){ updateShelfCount(); saveState(); }
@@ -3872,7 +3974,7 @@ function formatSize(bytes){
 }
 /* 上传成功的书入架。state 反映真实解析状态，不一律写成「已上传」——
    否则解析失败/仍在解析的书会被当成可用，用户点进去看到的是演示内容，又以为上传没成功。 */
-function addToShelf(name, ext, cover, state, serverId, animate){
+function addToShelf(name, ext, cover, state, serverId, animate, statusText){
   const grid = document.getElementById('shelfGrid');
   const gradients = [
     'linear-gradient(150deg,#C0603C,#8F3F26)',
@@ -3886,11 +3988,14 @@ function addToShelf(name, ext, cover, state, serverId, animate){
     ? `<img class="cover-img" src="${cover}" alt="">`
     : `<div class="cover-title">${displayName}</div><div class="cover-author">${ext.toUpperCase()} · 已上传</div>`;
   const st = state || 'ok';
+  /* 状态尾部文案允许调用方覆盖。「解析失败」这种一刀切说法会让用户以为整本书都废了，
+     而实际上正文往往还在、还能读 —— 这时应该说清「AI 精读没成 · 原文可读」。 */
+  const tail = statusText || (st === 'ok' ? '解析完成' : st === 'pending' ? '后台解析中' : '解析失败');
   const statusHtml = st === 'ok'
-    ? `<div class="status up-ok"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>已上传 · 解析完成</div>`
+    ? `<div class="status up-ok"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h7"/></svg></span>已上传 · ${tail}</div>`
     : st === 'pending'
-    ? `<div class="status up-pending"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>已上传 · 后台解析中</div>`
-    : `<div class="status up-fail"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>已上传 · 解析失败</div>`;
+    ? `<div class="status up-pending"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>已上传 · ${tail}</div>`
+    : `<div class="status up-fail"><span class="ico"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>已上传 · ${tail}</div>`;
   const card = document.createElement('div');
   const animateIn = animate !== false;
   card.className = 'book-card' + (animateIn ? ' just-added' : '');

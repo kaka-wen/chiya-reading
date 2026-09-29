@@ -69,11 +69,19 @@ function newDom(opts = {}) {
       window.confirm = () => true;
       window.onerror = m => errors.push('onerror: ' + m);
       // 浏览器一定有 fetch；jsdom 没有。
-      // 必须区分两种 URL：`/api/books?user_id=x`（列表，返回数组）与
-      // `/api/books/<id>`（单本详情，返回对象）——混在一起会让详情拿到数组，
-      // 表现为「打开上传的书却显示解析未完成」，是测试脚手架的问题而非产品 bug。
+      // 必须按 URL 形状区分三种端点，混在一起会制造「像产品 bug 的假失败」：
+      //   /api/books?user_id=x    列表，返回数组
+      //   /api/books/<id>/text    正文，返回 { text }
+      //   /api/books/<id>         单本详情，返回对象
+      // opts.text 未提供时按 404 处理 —— 与「服务端没有保存正文」的真实行为一致。
       window.fetch = function (url) {
         const u = String(url);
+        if (/\/api\/books\/[^?]+\/text$/.test(u)) {
+          if (opts.text === undefined || opts.text === null) {
+            return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({ error: '这本书没有保存正文' }) });
+          }
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(opts.text) });
+        }
         if (/\/api\/books\/[^?]+$/.test(u)) {
           return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(opts.book || {}) });
         }
@@ -388,7 +396,7 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     const dom = newDom({ books: [BOOK], book: BOOK });
     const w = dom.window, d = w.document;
     await wait(600);
-    // 默认 mock 的 /text 请求会走到「列表」分支返回数组 → 视为读取失败，应给诚实空态
+    // 未提供 opts.text → mock 的 /text 返回 404，等价于「服务端没保存下正文」
     await w.eval("openShelfBook('某本上传的书')");
     await wait(400);
     w.eval("switchMain('read')");
@@ -397,6 +405,94 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     ok('给出可读的失败说明', d.getElementById('readerEmpty').textContent.trim().length > 10, d.getElementById('readerEmpty').textContent.slice(0, 60));
     ok('不用演示书正文冒充', !d.getElementById('readerEmpty').textContent.includes('道可道'));
     ok('无 JS 报错', errors.length === 0, errors.join(' | '));
+    close(dom);
+  }
+
+  // ==================== 10. 上传的书：能读原文（有 AI 内容时也不影响） ====================
+  {
+    const LONG = (
+      '第一章 起飞\n\n' + '飞机离地的那一刻，地面的一切都被重新排序：路变成线，人变成点。'.repeat(12) + '\n\n'
+      + '第二章 夜航\n\n' + '夜间飞行靠的不是眼睛，而是仪表与训练形成的直觉。'.repeat(12) + '\n\n'
+      + '第三章 降落\n\n' + '降落是整段航程里最需要精确判断的时刻。'.repeat(12)
+    );
+    const BOOK = { id: 'srv-10', title: '夜航西飞', file_ext: 'txt', status: 'parsed', parse_error: null,
+                   has_text: true, char_count: LONG.length, text_truncated: false,
+                   text_char_count: LONG.length,
+                   created_at: '2026-09-29 11:00:00',
+                   theories: [{ id: 't1', name: '飞行与自由', sub: '', def: 'D', eval_impact: '', eval_debate: '', src: '', related: [] }],
+                   chains: [], cases: [] };
+    const dom = newDom({ books: [BOOK], book: BOOK,
+                         text: { id: 'srv-10', title: '夜航西飞', text: LONG, char_count: LONG.length, truncated: false } });
+    const w = dom.window, d = w.document;
+    await wait(600);
+
+    await w.eval("openShelfBook('夜航西飞')");
+    await wait(400);
+    ok('（场景10）有 AI 内容时仍默认进 AI 精读', vis(d, 'main-analysis'));
+    ok('（场景10）AI 精读入口未禁用', !d.querySelector('.tab[data-main="analysis"]').classList.contains('disabled'));
+
+    w.eval("switchMain('read')");
+    await wait(350);
+    ok('（场景10）上传的书能读原文', !d.getElementById('reader').classList.contains('hidden'));
+    ok('（场景10）正文渲染出来', d.getElementById('readerText').textContent.includes('飞机离地的那一刻'), d.getElementById('readerText').textContent.slice(0, 24));
+    const total10 = Number(d.getElementById('readerTotal').textContent);
+    ok('（场景10）长正文被分成多页', total10 > 1, total10 + ' 页');
+    ok('（场景10）书名显示上传的书名', d.getElementById('readerBookName').textContent === '夜航西飞', d.getElementById('readerBookName').textContent);
+    const note10 = d.getElementById('readerNote');
+    ok('（场景10）说明了正文来自自动提取', !note10.classList.contains('hidden') && note10.textContent.includes('自动提取'), note10.textContent.slice(0, 40));
+    ok('（场景10）说明了正文总字数', note10.textContent.includes(String(LONG.length) + ' 字'), note10.textContent.slice(0, 60));
+    ok('（场景10）未截断时不误报截断', !/只保留/.test(note10.textContent));
+    ok('（场景10）阅读位置按服务端 id 记忆', w.localStorage.getItem('chiya_reader_pos:srv:srv-10') !== null);
+    ok('（场景10）不出现演示书正文', !d.getElementById('readerText').textContent.includes('道可道'));
+
+    // 翻页后切走再切回，位置不丢（按书本独立）
+    w.eval('readerGo(2)');
+    await wait(60);
+    const page10 = d.getElementById('readerPage').textContent;
+    w.eval("switchMain('analysis')");
+    await wait(120);
+    w.eval("switchMain('read')");
+    await wait(200);
+    ok('（场景10）切走再切回位置不丢', d.getElementById('readerPage').textContent === page10, page10 + ' → ' + d.getElementById('readerPage').textContent);
+    ok('（场景10）无 JS 报错', errors.length === 0, errors.join(' | '));
+    close(dom);
+  }
+
+  // ==================== 11. AI 精读失败但正文可读 → 让用户读原文 ====================
+  {
+    const TXT = ('这一类书没有文字层的时候，提取出来的东西往往是空的。\n').repeat(60);
+    const BOOK = { id: 'srv-11', title: '扫描版旧书', file_ext: 'pdf', status: 'failed',
+                   parse_error: '该 PDF 提取不到文字（很可能是扫描版）',
+                   has_text: true, char_count: TXT.length, text_truncated: true,
+                   text_char_count: TXT.length,   // 列表接口返回的字段（书架卡片据此判断「原文可读」）
+                   created_at: '2026-09-29 12:00:00', theories: [], chains: [], cases: [] };
+    const dom = newDom({ books: [BOOK], book: BOOK,
+                         text: { id: 'srv-11', title: '扫描版旧书', text: TXT, char_count: TXT.length, truncated: true } });
+    const w = dom.window, d = w.document;
+    await wait(600);
+
+    const card = d.querySelector('#shelfGrid .book-card');
+    ok('（场景11）书架卡片不再一刀切说「解析失败」', !!card && /原文可读/.test(card.textContent), card ? card.textContent.slice(-40) : '(无卡片)');
+    ok('（场景11）卡片不再显示成一本废书', !!card && !/已上传 · 解析失败/.test(card.textContent));
+
+    await w.eval("openShelfBook('扫描版旧书')");
+    await wait(450);
+    ok('（场景11）直接停在「读原文」', d.querySelector('.tab[data-main="read"]').classList.contains('active'));
+    ok('（场景11）原文确实能读', d.getElementById('readerText').textContent.includes('没有文字层'), d.getElementById('readerText').textContent.slice(0, 24));
+    ok('（场景11）截断时如实告知', d.getElementById('readerNote').textContent.includes('只保留'), d.getElementById('readerNote').textContent.slice(0, 60));
+
+    ok('（场景11）AI 精读入口被禁用', d.querySelector('.tab[data-main="analysis"]').classList.contains('disabled'));
+    w.eval("switchMain('analysis')");
+    await wait(150);
+    ok('（场景11）点被禁用的 AI 精读不会切过去', !vis(d, 'main-analysis'));
+    ok('（场景11）并说明「原文可以读」', d.getElementById('toast').textContent.includes('原文可以读'), d.getElementById('toast').textContent);
+
+    ok('（场景11）概况说明了失败原因', d.getElementById('ovRoot').textContent.includes('扫描版'), d.getElementById('ovRoot').textContent.slice(0, 80));
+    ok('（场景11）概况引导去读原文', d.getElementById('ovRoot').textContent.includes('去读原文'));
+    ok('（场景11）概况给出正文字数', d.getElementById('ovRoot').textContent.includes(String(TXT.length)), '');
+    ok('（场景11）不再说成「整本书都打不开」', !/暂时无法精读这本书/.test(d.getElementById('ovRoot').textContent));
+    ok('（场景11）不用演示书内容冒充', !/道德经|卡尼曼/.test(d.getElementById('ovRoot').textContent));
+    ok('（场景11）无 JS 报错', errors.length === 0, errors.join(' | '));
     close(dom);
   }
 

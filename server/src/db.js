@@ -50,6 +50,20 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
+  -- 书籍正文表（用于「读原文」）
+  -- 刻意独立成表，而不是给 books 加一列：books 的列表与详情接口都是 SELECT *，
+  -- 正文动辄几十万字，混在一起会让「书架列表」这种轻量请求背上几 MB 的载荷。
+  -- 正文在提取成功后就落库，不依赖 AI 解析是否成功 ——
+  -- AI 提炼失败的书，原文依然是可读的，这对用户是有价值的信息。
+  CREATE TABLE IF NOT EXISTS book_texts (
+    book_id TEXT PRIMARY KEY,
+    text TEXT NOT NULL,
+    char_count INTEGER NOT NULL DEFAULT 0,
+    truncated INTEGER NOT NULL DEFAULT 0,  -- 1 = 正文过长，只保留了前面部分
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+  );
+
   -- 核心理论表
   CREATE TABLE IF NOT EXISTS theories (
     id TEXT PRIMARY KEY,

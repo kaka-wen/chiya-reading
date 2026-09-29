@@ -31,17 +31,25 @@ router.get('/users/:id', (req, res) => {
 // 获取书籍列表（书架）
 router.get('/books', (req, res) => {
   const { user_id } = req.query;
+  // 带上 text_char_count：书架卡片要据此区分「AI 精读没成」和「整本书都没救」——
+  // 解析失败但正文还在的书，依然能读原文，不该被显示成一本废书。
+  // 注意只取字数，不取正文本体（列表必须保持轻量）。
+  const COLS = `b.*, bt.char_count AS text_char_count, bt.truncated AS text_truncated`;
+  const JOIN = `LEFT JOIN book_texts bt ON bt.book_id = b.id`;
   let books;
   if (user_id) {
     books = db.prepare(`
-      SELECT b.*, s.finished, s.mastery
+      SELECT ${COLS}, s.finished, s.mastery
       FROM books b
       LEFT JOIN shelf s ON s.book_id = b.id AND s.user_id = ?
+      ${JOIN}
       WHERE b.user_id = ?
       ORDER BY b.created_at DESC
     `).all(user_id, user_id);
   } else {
-    books = db.prepare('SELECT * FROM books ORDER BY created_at DESC').all();
+    books = db.prepare(`
+      SELECT ${COLS} FROM books b ${JOIN} ORDER BY b.created_at DESC
+    `).all();
   }
   res.json(books);
 });
@@ -86,11 +94,38 @@ router.get('/books/:id', (req, res) => {
 
   const cases = db.prepare('SELECT * FROM cases WHERE book_id = ?').all(book.id);
 
+  // 正文明细。只给可用性与字数，不返回正文本体 ——
+  // 正文可能几十万字，塞进详情响应会让「打开书」变慢。
+  // 前端靠 has_text 决定「读原文」是否可用（AI 解析失败但正文在，仍然应该能读）。
+  const textMeta = db.prepare('SELECT char_count, truncated FROM book_texts WHERE book_id = ?').get(book.id);
+
   res.json({
     ...book,
+    has_text: !!textMeta,
+    char_count: textMeta ? textMeta.char_count : 0,
+    text_truncated: !!(textMeta && textMeta.truncated),
     theories: theoriesWithRelated,
     chains: Object.values(chainMap),
     cases
+  });
+});
+
+// 获取书籍正文（供「读原文」的阅读器使用）
+router.get('/books/:id/text', (req, res) => {
+  const book = db.prepare('SELECT id, title FROM books WHERE id = ?').get(req.params.id);
+  if (!book) return res.status(404).json({ error: '书籍不存在' });
+
+  const row = db.prepare('SELECT text, char_count, truncated FROM book_texts WHERE book_id = ?').get(book.id);
+  // 没有正文记录时明确 404，绝不返回空字符串冒充成功 ——
+  // 前端据状态码给出可读的说明（正文没保存下来），而不是显示一个空白阅读器。
+  if (!row || !row.text) return res.status(404).json({ error: '这本书没有保存正文' });
+
+  res.json({
+    id: book.id,
+    title: book.title,
+    text: row.text,
+    char_count: row.char_count,
+    truncated: !!row.truncated
   });
 });
 

@@ -14,6 +14,15 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 console.log(`[upload] 上传目录: ${UPLOAD_DIR}`);
 
+/* 正文提取上限。
+   以前 PDF 只提取前 50 页（那是为「喂给 AI 的 token 预算」定的），
+   但正文现在还要用于「读原文」—— 按 50 页截，用户读到的就不是全文了。
+   放宽到足够覆盖一整本书，同时留一个上限，避免畸形文件把解析拖死。
+   两个值都可用环境变量覆盖，不必改代码。 */
+const MAX_PDF_PAGES = Number(process.env.MAX_PDF_PAGES || 1500);
+const MAX_TEXT_CHARS = Number(process.env.MAX_TEXT_CHARS || 1500000);
+console.log(`[upload] 正文提取上限: PDF ${MAX_PDF_PAGES} 页 / 正文 ${MAX_TEXT_CHARS} 字`);
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
@@ -38,14 +47,32 @@ const upload = multer({
 
 // ==================== 上传 ====================
 
+/**
+ * 修正 multipart 中文文件名的乱码。
+ * multer/busboy 解析 Content-Disposition 里的 filename 时按 latin1 解码，
+ * 而浏览器/undici 发出的是 UTF-8 原始字节 —— 于是「测试书.txt」变成「æµè¯ä¹¦.txt」，
+ * 直接拿去当书名就是乱码。
+ *
+ * 只做「确认是乱码才还原」，避免把本来就正确的名字弄坏：
+ * 还原后的字节里若出现非法 UTF-8（替换符 U+FFFD），说明原名本来就是对的，保持原样。
+ * 例：'café.txt' 会被判为「本来就是对的」而原样返回。
+ */
+function decodeUploadName(name) {
+  const s = String(name || '');
+  if (!/[^\x00-\x7F]/.test(s)) return s;              // 纯 ASCII，无需处理
+  const restored = Buffer.from(s, 'latin1').toString('utf8');
+  return restored.includes('\uFFFD') ? s : restored;
+}
+
 // 上传电子书
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: '请选择文件' });
 
     const file = req.file;
-    const ext = path.extname(file.originalname).toLowerCase();
-    const title = path.basename(file.originalname, ext);
+    const originalName = decodeUploadName(file.originalname);
+    const ext = path.extname(originalName).toLowerCase();
+    const title = path.basename(originalName, ext);
     const userId = req.body.user_id || 'default';
 
     // 确保用户存在
@@ -93,12 +120,21 @@ async function parseBookAsync(bookId, filePath, title) {
     db.prepare("UPDATE books SET status = 'parsing' WHERE id = ?").run(bookId);
 
     // 提取文本
-    const text = await extractText(filePath);
-    if (!text || text.length < 20) {
+    const ex = await extractText(filePath);
+    const text = ex.text || '';
+    if (text.length < 20) {
       throw new Error('无法从文件中提取有效文本，请确认文件格式正确');
     }
 
-    // 截取前 50000 字符（控制 token 消耗）
+    // 先把正文落库，再交给 AI —— 顺序很重要。
+    // AI 这一步可能因 key 失效、超时、或「提炼不出理论」而失败，
+    // 但正文已经提取出来了，不该连带丢掉：用户至少还能「读原文」，
+    // 而这正是本产品两条路里的一条（愿意读原文的读原文）。
+    saveBookText(bookId, text, ex.truncated);
+    console.log(`[${bookId}] 正文已保存：${text.length} 字${ex.truncated ? '（超长，已截断）' : ''}`);
+
+    // 截取前 50000 字符喂 AI（控制 token 消耗）。注意：只截给 AI 的那份，
+    // 落库的正文是完整的。
     const truncatedText = text.slice(0, 50000);
 
     // AI 解析
@@ -191,30 +227,41 @@ async function parseBookAsync(bookId, filePath, title) {
   }
 }
 
+/** 保存/更新正文。独立成表，与 AI 解析结果解耦。 */
+function saveBookText(bookId, text, truncated) {
+  db.prepare(`
+    INSERT INTO book_texts (book_id, text, char_count, truncated)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(book_id) DO UPDATE SET
+      text = excluded.text, char_count = excluded.char_count,
+      truncated = excluded.truncated, created_at = datetime('now')
+  `).run(bookId, text, text.length, truncated ? 1 : 0);
+}
+
 /**
- * 从文件中提取文本
+ * 从文件中提取文本。
+ * 返回 { text, truncated } —— truncated 表示因超长只保留了前 MAX_TEXT_CHARS 字。
+ *
+ * ⚠️ 绝不返回占位字符串冒充成功：占位串会通过调用方的长度校验，
+ *    让整条流水线误判为成功（AI 拿占位串提炼不出理论 → status=parsed 但内容为空）。
  */
 async function extractText(filePath) {
   const ext = path.extname(filePath).toLowerCase();
+  let text = '';
+  let pageLimited = false;   // PDF 页数达到 MAX_PDF_PAGES 被截
 
   if (ext === '.txt') {
-    const t = fs.readFileSync(filePath, 'utf-8');
-    if (t.trim().length < 100) throw new Error('文本文件内容过短，无法解析');
-    return t;
-  }
-
-  if (ext === '.pdf') {
+    text = fs.readFileSync(filePath, 'utf-8');
+    if (text.trim().length < 100) throw new Error('文本文件内容过短，无法解析');
+  } else if (ext === '.pdf') {
     // 用 pdf.js 提取文本。
-    // ⚠️ pdf.js v4+ 有两条硬性要求，任何一条不满足都必然失败：
+    // ⚠️ pdf.js v6 有两条硬性要求，任何一条不满足都必然失败：
     //   1) data 必须是 Uint8Array —— v6 的 getDataProp() 会**显式拒绝** Node 的 Buffer，
     //      而 fs.readFileSync() 返回的正是 Buffer，所以直接传会抛
     //      「Please provide binary data as `Uint8Array`, rather than `Buffer`」。
     //      另外校验还要求 val.byteLength === val.buffer.byteLength，故用 new Uint8Array(buf) 整体拷贝最稳。
     //   2) Node 环境必须用 legacy 构建 —— 主构建会崩在 `Promise.try is not a function`（Node 22 无此 API）。
     //      用动态 import() 而非 require()，因为 require(ESM) 在 Node < 22.12 不可用。
-    // 还有一条：提取失败必须抛错，绝不能返回占位字符串 —— 占位串会通过「有效文本」检查，
-    //   让整条流水线误判成功（AI 拿占位串提炼不出理论 → status=parsed 但 theories=[] 的假成功）。
-    let text = '';
     try {
       const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
       const data = new Uint8Array(fs.readFileSync(filePath));
@@ -224,7 +271,8 @@ async function extractText(filePath) {
         // 不提供标准字体数据时，使用标准字体的 PDF 会提取不到文字（pdf.js 会告警）
         standardFontDataUrl: path.join(pkgDir, 'standard_fonts/')
       }).promise;
-      const pages = Math.min(doc.numPages, 50);
+      const pages = Math.min(doc.numPages, MAX_PDF_PAGES);
+      pageLimited = doc.numPages > pages;
       for (let i = 1; i <= pages; i++) {
         const page = await doc.getPage(i);
         const content = await page.getTextContent();
@@ -233,18 +281,15 @@ async function extractText(filePath) {
       if (text.replace(/\s/g, '').length < 200) {
         throw new Error('该 PDF 提取不到文字（共 ' + doc.numPages + ' 页，很可能是扫描版／图片型 PDF）。请改用带文字层的 PDF，或先做 OCR。');
       }
-      console.log(`[pdf] 提取成功：${doc.numPages} 页，${text.replace(/\s/g, '').length} 字`);
-      return text;
+      console.log(`[pdf] 提取成功：${pages}/${doc.numPages} 页，${text.replace(/\s/g, '').length} 字`
+        + (pageLimited ? `（已达上限 ${MAX_PDF_PAGES} 页，未提取的部分读不到）` : ''));
     } catch (e) {
       // 区分「我们主动抛出的可读原因」与「pdf.js 内部错误」
       if (e.message && e.message.includes('提取不到文字')) throw e;
       throw new Error('PDF 文字提取失败：' + (e.message || '未知错误'));
     }
-  }
-
-  if (ext === '.epub') {
+  } else if (ext === '.epub') {
     // EPUB 本质是 zip，尝试解压后提取
-    let text = '';
     try {
       const AdmZip = require('adm-zip');
       const zip = new AdmZip(filePath);
@@ -262,11 +307,19 @@ async function extractText(filePath) {
     if (text.replace(/\s/g, '').length < 200) {
       throw new Error('该 EPUB 提取不到文字，请确认文件未损坏');
     }
-    return text;
+  } else {
+    // MOBI 等暂不支持提取：明确报错，不要返回占位串冒充成功
+    throw new Error(`暂不支持从 ${ext.toUpperCase()} 文件中提取文字，请上传 EPUB / PDF / TXT`);
   }
 
-  // MOBI 等暂不支持提取：明确报错，不要返回占位串冒充成功
-  throw new Error(`暂不支持从 ${ext.toUpperCase()} 文件中提取文字，请上传 EPUB / PDF / TXT`);
+  // 全文过长时截断，并如实标记（前端会据此说明「只保留了多少」）
+  let truncated = pageLimited;
+  if (text.length > MAX_TEXT_CHARS) {
+    text = text.slice(0, MAX_TEXT_CHARS);
+    truncated = true;
+    console.warn(`[extract] 正文超过 ${MAX_TEXT_CHARS} 字，已截断`);
+  }
+  return { text, truncated };
 }
 
 module.exports = router;
