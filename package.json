@@ -8,6 +8,7 @@
   },
   "scripts": {
     "postinstall": "npm --prefix server install",
-    "start": "node server/src/index.js"
+    "start": "node server/src/index.js",
+    "test": "node tests/e2e.js"
   }
 }
