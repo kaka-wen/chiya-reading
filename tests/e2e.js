@@ -97,7 +97,7 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     ok('初始化无 JS 报错', errors.length === 0, errors.join(' | '));
     ['view-welcome','view-shelf','view-store','view-study','view-notes','view-note','view-book','view-finished']
       .forEach(id => ok('存在视图 #' + id, !!d.getElementById(id)));
-    ok('默认正在精读《思考，快与慢》', w.eval('currentReadingBook') === '思考，快与慢', w.eval('currentReadingBook'));
+    ok('默认正在精读《道德经》', w.eval('currentReadingBook') === '道德经', w.eval('currentReadingBook'));
 
     // 审计：CSS 变量、重复 id、onclick 函数齐备
     const sheet = sheetOf(d);
@@ -133,7 +133,7 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     ok('提问·掌握度评测 Tab 仍保留', !!d.querySelector('.subtab[data-sub="quiz"]'));
     // 书头与 Tab 之间衔接正常
     ok('移除后书头仍在', !!d.querySelector('#view-book .book-head h2'));
-    ok('移除后大 Tab 仍在', d.querySelectorAll('#view-book .tab-bar .tab').length === 2);
+    ok('页面级三栏（读原文/AI精读/互动讨论）', d.querySelectorAll('#view-book .tab-bar .tab').length === 3, d.querySelectorAll('#view-book .tab-bar .tab').length);
     ok('无 JS 报错', errors.length === 0, errors.join(' | '));
     close(dom);
   }
@@ -147,16 +147,26 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     await wait(150);
     w.eval("switchSub('theory')");
     await wait(100);
-    ok('① 核心理论渲染出卡片', d.querySelectorAll('#theoryList .theory-card').length === 6, d.querySelectorAll('#theoryList .theory-card').length);
+    ok('① 核心理论渲染出 4 张卡', d.querySelectorAll('#theoryList .theory-card').length === 4, d.querySelectorAll('#theoryList .theory-card').length);
+    ok('① 理论为《道德经》的（道 / 无为 / 柔弱 / 反者道之动）',
+       /道\b|无为/.test(d.getElementById('theoryList').textContent) && d.getElementById('theoryList').textContent.includes('反者道之动'));
+    ok('① 不再出现另一本书的理论', !/双系统|前景理论|锚定效应/.test(d.getElementById('theoryList').textContent));
+
+    // 内容尚未重写的三块必须是「诚实占位」，不能留空、也不能串到别的书
     w.eval("switchSub('logic')");
     await wait(100);
-    ok('② 逻辑链渲染出步骤', d.querySelectorAll('#logicContainer .logic-step').length > 0, d.querySelectorAll('#logicContainer .logic-step').length);
+    ok('② 逻辑链给出诚实占位', d.getElementById('logicContainer').textContent.includes('暂无可展示'), d.getElementById('logicContainer').textContent.slice(0, 40));
     w.eval("switchSub('case')");
     await wait(100);
-    ok('③ 案例渲染出卡片', d.querySelectorAll('#caseContainer .case-card').length > 0, d.querySelectorAll('#caseContainer .case-card').length);
+    ok('③ 案例给出诚实占位', d.getElementById('caseContainer').textContent.includes('正在整理'), d.getElementById('caseContainer').textContent.slice(0, 40));
+    w.eval("switchSub('selfcheck')");
+    await wait(100);
+    ok('④ 自测说明本书没有原书测试题', d.getElementById('qzContainer').textContent.includes('没有'), d.getElementById('qzContainer').textContent.slice(0, 40));
     w.eval("switchSub('overview')");
     await wait(100);
-    ok('概况页渲染（演示书版）', d.getElementById('ovRoot').textContent.includes('卡尼曼'));
+    ok('概况页为《道德经》版', d.getElementById('ovRoot').textContent.includes('老子') && d.getElementById('ovRoot').textContent.includes('战国'));
+    ok('概况页不出现另一本书', !/卡尼曼|行为经济学/.test(d.getElementById('ovRoot').textContent));
+    ok('概况页说明了「不适合谁」', d.getElementById('ovRoot').textContent.includes('不适合谁'));
     ok('无 JS 报错', errors.length === 0, errors.join(' | '));
     close(dom);
   }
@@ -198,7 +208,7 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     ok('入架后书屋显示空态', vis(d, 'studyEmpty') && !vis(d, 'studyMain'));
     click(w, d.getElementById('navShelf'));
     click(w, d.querySelector('#shelfGrid .btn-unshelve'));
-    ok('书架取回后恢复正在精读', w.eval('currentReadingBook') === '思考，快与慢');
+    ok('书架取回后恢复正在精读', w.eval('currentReadingBook') === '道德经');
     ok('无 JS 报错', errors.length === 0, errors.join(' | '));
     close(dom);
   }
@@ -263,14 +273,13 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     w.eval("switchSub('case')"); await wait(100);
     ok('③ 渲染本书案例', d.getElementById('caseContainer').textContent.includes('教科书里的历史叙事'));
     ok('③ 案例步骤已解析为列表', d.getElementById('caseContainer').textContent.includes('教育系统持续再生产'));
-    ok('思维导图入口被禁用', d.querySelector('.subtab[data-sub="map"]').classList.contains('disabled'));
+    ok('AI 精读里已无思维导图入口', d.querySelector('#main-analysis .subtab[data-sub="map"]') === null);
+    ok('书中自测入口被禁用', d.querySelector('.subtab[data-sub="selfcheck"]').classList.contains('disabled'));
     ok('互动讨论入口被禁用', d.querySelector('.tab[data-main="discuss"]').classList.contains('disabled'));
-    w.eval("switchSub('map')"); await wait(80);
-    ok('点禁用的导图不会切过去', d.getElementById('sub-map').classList.contains('hidden'));
 
-    await w.eval("openBook('思考，快与慢')");
-    await wait(200);
-    ok('切回演示书后数据还原', d.getElementById('theoryList').textContent.includes('双系统模型'));
+    await w.eval('openBook()');                 // 默认打开演示书
+    await wait(250);
+    ok('切回演示书后不再显示上传书内容', !d.getElementById('theoryList').textContent.includes('文化霸权'));
     ok('切回后概况恢复演示书版', !d.querySelector('#ovRoot .up-ov-hero'));
     ok('无 JS 报错', errors.length === 0, errors.join(' | '));
     close(dom);
@@ -289,6 +298,104 @@ const sheetOf = d => [...d.querySelectorAll('style')].map(e => e.textContent).jo
     await wait(400);
     ok('打开时说明失败原因', d.getElementById('ovRoot').textContent.includes('扫描版'));
     ok('不用演示书内容冒充', !/卡尼曼|双系统/.test(d.getElementById('ovRoot').textContent));
+    ok('无 JS 报错', errors.length === 0, errors.join(' | '));
+    close(dom);
+  }
+
+  // ==================== 8. 两级结构：读原文 / AI 精读 ====================
+  {
+    const dom = newDom();
+    const w = dom.window, d = w.document;
+    await wait(500);
+    w.eval('openBook()');
+    await wait(250);
+
+    // —— 页面级三栏 ——
+    const tabs = [...d.querySelectorAll('#view-book .tab-bar .tab')].map(t => t.dataset.main);
+    ok('三栏为 read/analysis/discuss', tabs.join(',') === 'read,analysis,discuss', tabs.join(','));
+    ok('默认停在「读原文」', d.querySelector('.tab[data-main="read"]').classList.contains('active'));
+
+    // —— 读原文：翻页阅读器 ——
+    ok('阅读器可见', vis(d, 'reader') || !d.getElementById('reader').classList.contains('hidden'));
+    ok('空态未显示', d.getElementById('readerEmpty').classList.contains('hidden'));
+    ok('书名显示《道德经》', d.getElementById('readerBookName').textContent === '道德经', d.getElementById('readerBookName').textContent);
+    ok('总页数 = 81 章', d.getElementById('readerTotal').textContent === '81', d.getElementById('readerTotal').textContent);
+    ok('首页章名为「道经 · 第一章」', d.getElementById('readerChapName').textContent === '道经 · 第一章', d.getElementById('readerChapName').textContent);
+    ok('首章正文为「道可道」', d.getElementById('readerText').textContent.includes('道可道，非常道'), d.getElementById('readerText').textContent.slice(0, 20));
+    ok('第 1 页「上一页」禁用', d.getElementById('readerPrev').disabled);
+    ok('第 1 页「下一页」可用', !d.getElementById('readerNext').disabled);
+
+    // 页码与进度
+    ok('页码显示 1', d.getElementById('readerPage').textContent === '1');
+    const fill1 = parseFloat(d.getElementById('readerFill').style.width) || 0;
+    ok('进度条 ≈ 1/81', Math.abs(fill1 - 100 / 81) < 1, fill1);
+
+    // 翻到第 2 页
+    w.eval('readerGo(1)');
+    await wait(60);
+    ok('翻页后页码变 2', d.getElementById('readerPage').textContent === '2');
+    ok('第 2 章为「天下皆知美之为美」', d.getElementById('readerText').textContent.includes('天下皆知美之为美'), d.getElementById('readerText').textContent.slice(0, 20));
+    ok('第 2 页「上一页」可用', !d.getElementById('readerPrev').disabled);
+
+    // 跳到末页：下一页应禁用
+    w.eval('readerGo(1000)');
+    await wait(60);
+    ok('跳到末页为「信言不美」', d.getElementById('readerText').textContent.includes('信言不美'), d.getElementById('readerText').textContent.slice(0, 20));
+    ok('末页「下一页」禁用', d.getElementById('readerNext').disabled);
+    ok('末页页码 = 81', d.getElementById('readerPage').textContent === '81');
+    w.eval('readerGo(1)');
+    ok('末页再翻不会越界', d.getElementById('readerPage').textContent === '81');
+
+    // 回到第 5 页，用于验证「切走再切回位置不丢」
+    w.eval('readerGo(-76)');
+    await wait(60);
+    ok('回到第 5 页（道经 · 第五章）', d.getElementById('readerChapName').textContent === '道经 · 第五章', d.getElementById('readerChapName').textContent);
+
+    // 字号调节 + 记忆
+    const f0 = parseFloat(d.getElementById('readerText').style.fontSize);
+    w.eval('readerFont(1)');
+    await wait(40);
+    const f1 = parseFloat(d.getElementById('readerText').style.fontSize);
+    ok('放大字号生效', f1 > f0, f0 + ' → ' + f1);
+    w.eval('readerFont(-1)');
+    await wait(40);
+    ok('缩小字号生效', parseFloat(d.getElementById('readerText').style.fontSize) === f0);
+    ok('字号已写入 localStorage', !!w.localStorage.getItem('chiya_reader_font'));
+    ok('阅读位置已写入 localStorage', w.localStorage.getItem('chiya_reader_pos:demo:道德经') !== null, w.localStorage.getItem('chiya_reader_pos:demo:道德经'));
+
+    // —— 切到 AI 精读 ——
+    w.eval("switchMain('analysis')");
+    await wait(150);
+    ok('AI 精读可见', vis(d, 'main-analysis'));
+    ok('读原文已隐藏', !vis(d, 'main-read'));
+    const subs = [...d.querySelectorAll('#main-analysis .subtab')].map(t => t.dataset.sub);
+    ok('AI 精读含概况 + ①②③④（5 项）', subs.join(',') === 'overview,theory,logic,case,selfcheck', subs.join(','));
+    ok('AI 精读里没有思维导图', !subs.includes('map'));
+
+    // —— 切回读原文应在同一页 ——
+    w.eval("switchMain('read')");
+    await wait(150);
+    ok('切走再切回，阅读位置不丢（第 5 页）', d.getElementById('readerPage').textContent === '5', d.getElementById('readerPage').textContent);
+    ok('无 JS 报错', errors.length === 0, errors.join(' | '));
+    close(dom);
+  }
+
+  // ==================== 9. 上传的书：读不到正文时诚实反馈 ====================
+  {
+    const BOOK = { id: 'srv-9', title: '某本上传的书', file_ext: 'pdf', status: 'parsed', parse_error: null,
+                   created_at: '2026-09-29 10:00:00', theories: [{ id: 't1', name: 'X 理论', sub: '', def: 'D',
+                   eval_impact: '', eval_debate: '', src: '', related: [] }], chains: [], cases: [] };
+    const dom = newDom({ books: [BOOK], book: BOOK });
+    const w = dom.window, d = w.document;
+    await wait(600);
+    // 默认 mock 的 /text 请求会走到「列表」分支返回数组 → 视为读取失败，应给诚实空态
+    await w.eval("openShelfBook('某本上传的书')");
+    await wait(400);
+    w.eval("switchMain('read')");
+    await wait(300);
+    ok('读不到正文时不显示空白阅读器', d.getElementById('reader').classList.contains('hidden'));
+    ok('给出可读的失败说明', d.getElementById('readerEmpty').textContent.trim().length > 10, d.getElementById('readerEmpty').textContent.slice(0, 60));
+    ok('不用演示书正文冒充', !d.getElementById('readerEmpty').textContent.includes('道可道'));
     ok('无 JS 报错', errors.length === 0, errors.join(' | '));
     close(dom);
   }
