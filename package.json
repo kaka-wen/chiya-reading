@@ -9,7 +9,8 @@
   "scripts": {
     "postinstall": "npm --prefix server install",
     "start": "node server/src/index.js",
-    "test": "npm run test:ui && npm run test:server && npm run test:int",
+    "test": "npm run test:secrets && npm run test:ui && npm run test:server && npm run test:int",
+    "test:secrets": "node tests/secrets.js",
     "test:ui": "node tests/e2e.js",
     "test:server": "node tests/server.js",
     "test:int": "node tests/integration.js"
